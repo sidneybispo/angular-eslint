@@ -51,7 +51,7 @@
     ]
   },
   "devDependencies": {
-    "@angular/cli": "13.0.2",
+    "@angular/cli": "13.1.2",
     "@angular/compiler": "13.0.2",
     "@commitlint/cli": "15.0.0",
     "@commitlint/config-conventional": "15.0.0",
@@ -61,7 +61,7 @@
     "@nrwl/nx-cloud": "12.5.4",
     "@nrwl/tao": "13.1.4",
     "@nrwl/workspace": "13.1.4",
-    "@schematics/angular": "13.0.2",
+    "@schematics/angular": "13.1.2",
     "@types/eslint": "8.2.0",
     "@types/eslint-scope": "3.7.1",
     "@types/jest": "27.0.2",
