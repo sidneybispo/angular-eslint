@@ -52,7 +52,7 @@
   },
   "devDependencies": {
     "@angular/cli": "13.0.2",
-    "@angular/compiler": "13.0.2",
+    "@angular/compiler": "13.1.2",
     "@commitlint/cli": "15.0.0",
     "@commitlint/config-conventional": "15.0.0",
     "@nrwl/cli": "13.1.4",

@@ -58,10 +58,10 @@
     symbol-observable "4.0.0"
     uuid "8.3.2"
 
-"@angular/compiler@13.0.2":
-  version "13.0.2"
-  resolved "https://registry.yarnpkg.com/@angular/compiler/-/compiler-13.0.2.tgz#5bc1bfc1931f1ff2813f8fff8b8ceaa57b47d717"
-  integrity sha512-EvIFT8y5VNICrnPgiamv/z9hfQ7KjLCM52g4ssXGCeGPVj58OEfslEc3jO4BCJG7xuLm7dCuSRV0pBlJNTSYFg==
+"@angular/compiler@13.1.2":
+  version "13.1.2"
+  resolved "https://registry.yarnpkg.com/@angular/compiler/-/compiler-13.1.2.tgz#86afbe282d0ff407fd8aeb66a79a804f40e7efa4"
+  integrity sha512-xbM3eClhUIHEFR0Et1bVC18Q7+kJx+hNNWWQl63RNYYBxTZnZpXA3mYi6IcEasy7BHkobVW+5teqlibFQY4gfQ==
   dependencies:
     tslib "^2.3.0"
 
