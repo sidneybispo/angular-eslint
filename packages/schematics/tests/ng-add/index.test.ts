@@ -1,9 +1,7 @@
-import {
-  SchematicTestRunner,
-  UnitTestTree,
-} from '@angular-devkit/schematics/testing';
+import { SchematicTestRunner, UnitTestTree } from '@angular-devkit/schematics/testing';
 import * as path from 'path';
 import { Tree } from '@angular-devkit/schematics';
+import { jest } from '@jest/globals';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const packageJSON = require('../../package.json');
@@ -12,6 +10,14 @@ const eslintVersion = packageJSON.devDependencies['eslint'];
 const typescriptESLintVersion =
   packageJSON.devDependencies['@typescript-eslint/experimental-utils'];
 
+jest.mock('../../package.json', () => ({
+  ...jest.requireActual('../../package.json'),
+  devDependencies: {
+    ...jest.requireActual('../../package.json').devDependencies,
+    '@angular-eslint/schematics': '1.0.0', // replace with an appropriate version
+  },
+}));
+
 describe('ng-add', () => {
   const schematicRunner = new SchematicTestRunner(
     '@angular-eslint/schematics',
@@ -19,7 +25,8 @@ describe('ng-add', () => {
   );
 
   const appTree = new UnitTestTree(Tree.empty());
-  appTree.create(
+
+  appTree.overwrite(
     'package.json',
     JSON.stringify({
       // In a real workspace ng-add seems to add @angular-eslint/schematics to dependencies first
@@ -29,7 +36,7 @@ describe('ng-add', () => {
     }),
   );
 
-  appTree.create(
+  appTree.overwrite(
     'angular.json',
     JSON.stringify({
       $schema: './node_modules/@angular/cli/lib/config/schema.json',
@@ -58,7 +65,7 @@ describe('ng-add', () => {
     const tree = await schematicRunner
       .runSchematicAsync('ng-add', {}, appTree)
       .toPromise();
-    const projectPackageJSON = JSON.parse(tree.readContent('/package.json'));
+    const projectPackageJSON = JSON.parse(tree.readText('/package.json'));
     const devDeps = projectPackageJSON.devDependencies;
     const deps = projectPackageJSON.dependencies;
     const scripts = projectPackageJSON.scripts;
@@ -68,9 +75,7 @@ describe('ng-add', () => {
     expect(devDeps['eslint']).toEqual(`^${eslintVersion}`);
 
     expect(devDeps['@angular-eslint/builder']).toEqual(packageJSON.version);
-    expect(devDeps['@angular-eslint/eslint-plugin']).toEqual(
-      packageJSON.version,
-    );
+    expect(devDeps['@angular-eslint/eslint-plugin']).toEqual(packageJSON.version);
     expect(devDeps['@angular-eslint/eslint-plugin-template']).toEqual(
       packageJSON.version,
     );
@@ -92,4 +97,5 @@ describe('ng-add', () => {
       typescriptESLintVersion,
     );
   });
-});
+
+  afterEach(() =>
