@@ -1,63 +1,42 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`convert-tslint-to-eslint default Angular CLI project (i.e. uses a src/ directory at the root of the workspace) should work 1`] = `
-Object {
-  "ignorePatterns": Array [
-    "projects/**/*",
-  ],
-  "overrides": Array [
-    Object {
-      "extends": Array [
+{
+  "ignorePatterns": ["projects/**/*"],
+  "overrides": [
+    {
+      "extends": [
         "plugin:@angular-eslint/ng-cli-compat",
         "plugin:@angular-eslint/ng-cli-compat--formatting-add-on",
-        "plugin:@angular-eslint/template/process-inline-templates",
+        "plugin:@angular-eslint/template/process-inline-templates"
       ],
-      "files": Array [
-        "*.ts",
-      ],
-      "parserOptions": Object {
+      "files": ["*.ts"],
+      "parserOptions": {
         "createDefaultProgram": true,
-        "project": Array [
-          "tsconfig.json",
-          "e2e/tsconfig.json",
-        ],
+        "project": ["tsconfig.json", "e2e/tsconfig.json"]
       },
-      "rules": Object {
-        "@angular-eslint/component-selector": Array [
+      "rules": {
+        "@angular-eslint/component-selector": [
           "error",
-          Object {
+          {
             "prefix": "app",
             "style": "kebab-case",
-            "type": "element",
-          },
+            "type": "element"
+          }
         ],
-        "@angular-eslint/directive-selector": Array [
+        "@angular-eslint/directive-selector": [
           "error",
-          Object {
+          {
             "prefix": "app",
             "style": "camelCase",
-            "type": "attribute",
-          },
+            "type": "attribute"
+          }
         ],
-        "@typescript-eslint/quotes": Array [
-          "error",
-          "double",
-          Object {
-            "allowTemplateLiterals": true,
-          },
-        ],
-      },
+        "@typescript-eslint/quotes": ["error", "double", { "allowTemplateLiterals": true }]
+      }
     },
-    Object {
-      "extends": Array [
-        "plugin:@angular-eslint/template/recommended",
-      ],
-      "files": Array [
-        "*.html",
-      ],
-      "rules": Object {},
-    },
+    {
+      "extends": ["plugin:@angular-eslint/template/recommended"],
+      "files": ["*.html"],
+      "rules": {}
+    }
   ],
-  "root": true,
+  "root": true
 }
-`;
