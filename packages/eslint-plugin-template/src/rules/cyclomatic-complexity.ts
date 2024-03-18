@@ -8,10 +8,14 @@ import {
 } from '../utils/create-eslint-rule';
 
 type Options = [{ maxComplexity: number }];
-export type MessageIds = 'cyclomaticComplexity';
-export const RULE_NAME = 'cyclomatic-complexity';
+type MessageIds = 'cyclomaticComplexity';
+const RULE_NAME = 'cyclomatic-complexity';
 
 const DEFAULT_MAX_COMPLEXITY = 5;
+
+function getCyclomaticComplexity(node: TmplAstBoundAttribute | TmplAstTextAttribute) {
+  return 1;
+}
 
 export default createESLintRule<Options, MessageIds>({
   name: RULE_NAME,
@@ -35,7 +39,7 @@ export default createESLintRule<Options, MessageIds>({
     ],
     messages: {
       cyclomaticComplexity:
-        'The cyclomatic complexity {{totalComplexity}} exceeds the defined limit {{maxComplexity}}',
+        'The cyclomatic complexity of the template exceeds the defined limit of {{maxComplexity}}',
     },
   },
   defaultOptions: [{ maxComplexity: DEFAULT_MAX_COMPLEXITY }],
@@ -47,7 +51,8 @@ export default createESLintRule<Options, MessageIds>({
       'BoundAttribute[name=/^(ngForOf|ngIf|ngSwitchCase)$/], TextAttribute[name="ngSwitchDefault"]'({
         sourceSpan,
       }: TmplAstBoundAttribute | TmplAstTextAttribute) {
-        totalComplexity += 1;
+        const complexity = getCyclomaticComplexity({ sourceSpan } as any);
+        totalComplexity += complexity;
 
         if (totalComplexity <= maxComplexity) return;
 
