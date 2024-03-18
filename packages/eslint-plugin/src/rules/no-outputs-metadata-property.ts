@@ -1,39 +1,36 @@
-import { Selectors } from '@angular-eslint/utils';
-import type { TSESTree } from '@typescript-eslint/experimental-utils';
-import { createESLintRule } from '../utils/create-eslint-rule';
+import { Rule, RuleListener, TSESTree } from '@typescript-eslint/experimental-utils';
+import { createRule } from '../utils/create-eslint-rule';
+import { ComponentDirectiveMetadataProperty } from '../utils/metadata-properties';
 
-type Options = [];
-export type MessageIds = 'noOutputsMetadataProperty';
-export const RULE_NAME = 'no-outputs-metadata-property';
-const METADATA_PROPERTY_NAME = 'outputs';
+const RULE_NAME = 'no-outputs-metadata-property';
+const MESSAGE_ID = 'noOutputsMetadataProperty';
 const STYLE_GUIDE_LINK = 'https://angular.io/styleguide#style-05-12';
 
-export default createESLintRule<Options, MessageIds>({
+const message = `Use \`@Output()\` rather than the \`outputs\` metadata property (${STYLE_GUIDE_LINK})`;
+
+export default createRule<[], MessageIds>({
   name: RULE_NAME,
   meta: {
     type: 'suggestion',
     docs: {
-      description: `Disallows usage of the \`${METADATA_PROPERTY_NAME}\` metadata property. See more at ${STYLE_GUIDE_LINK}`,
+      description: `Disallows usage of the \`outputs\` metadata property. See more at ${STYLE_GUIDE_LINK}`,
       recommended: 'error',
     },
     schema: [],
     messages: {
-      noOutputsMetadataProperty: `Use \`@Output\` rather than the \`${METADATA_PROPERTY_NAME}\` metadata property (${STYLE_GUIDE_LINK})`,
+      [MESSAGE_ID]: message,
     },
   },
-  defaultOptions: [],
-  create(context) {
-    return {
-      [`${
-        Selectors.COMPONENT_OR_DIRECTIVE_CLASS_DECORATOR
-      } ${Selectors.metadataProperty(METADATA_PROPERTY_NAME)}`](
-        node: TSESTree.Property,
-      ) {
-        context.report({
-          node,
-          messageId: 'noOutputsMetadataProperty',
-        });
-      },
-    };
+  create(context: Readonly<Rule.RuleContext>) {
+    return new class NoOutputsMetadataPropertyRuleListener extends RuleListener {
+      public override enter(node: TSESTree.Node): void | TSESTree.RuleError {
+        if (ComponentDirectiveMetadataProperty.isOutputsMetadataProperty(node)) {
+          context.report({
+            node,
+            messageId: MESSAGE_ID,
+          });
+        }
+      }
+    }(context);
   },
 });
