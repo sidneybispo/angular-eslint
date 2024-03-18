@@ -7,9 +7,10 @@ import {
 } from '../utils/local-registry-process';
 import { runLint } from '../utils/run-lint';
 
-const fixtureDirectory = 'v1123-multi-project-manual-config';
+describe('v1123-multi-project-manual-config', () => {
+  const fixtureDirectory = 'v1123-multi-project-manual-config';
+  const lintOutputSnapshotPath = path.join(fixtureDirectory, 'lint-output.snapshot');
 
-describe(fixtureDirectory, () => {
   jest.setTimeout(LONG_TIMEOUT_MS);
 
   beforeEach(async () => {
@@ -20,8 +21,16 @@ describe(fixtureDirectory, () => {
     process.chdir(cwd);
   });
 
-  it('it should produce the expected lint output', async () => {
+  it('should produce the expected lint output', async () => {
     const lintOutput = await runLint(fixtureDirectory);
-    expect(lintOutput).toMatchSnapshot();
+    expect(lintOutput).toMatchFileSnapshot(lintOutputSnapshotPath);
+  });
+
+  // Add this afterTest hook to update the snapshot file when the test fails
+  afterTest(async (test, result) => {
+    if (result.status === 'failed') {
+      const lintOutput = await runLint(fixtureDirectory);
+      writeFileSync(lintOutputSnapshotPath, lintOutput);
+    }
   });
 });
