@@ -1,6 +1,17 @@
-import type { TSESLint, TSESTree } from '@typescript-eslint/experimental-utils';
-import { ASTUtils } from '@typescript-eslint/experimental-utils';
+import type {
+  TSESLint,
+  TSESTree,
+  RuleFixer,
+  SourceCode,
+  TSClassImplements,
+  ClassDeclaration,
+  Decorator,
+  CallExpression,
+  ObjectExpression,
+  Node,
+} from '@typescript-eslint/experimental-utils';
 import {
+  ASTUtils,
   getCorrespondentImportClause,
   getImportDeclarations,
   getImportDeclarationSpecifier,
@@ -12,19 +23,21 @@ import {
 } from './ast-utils';
 import { getLast } from '../utils';
 
+type ImportAddParams = {
+  compatibleWithTypeOnlyImport?: boolean;
+  fixer: RuleFixer;
+  importName: string;
+  moduleName: string;
+  node: Node;
+};
+
 export function getImportAddFix({
   compatibleWithTypeOnlyImport = false,
   fixer,
   importName,
   moduleName,
   node,
-}: {
-  compatibleWithTypeOnlyImport?: boolean;
-  fixer: TSESLint.RuleFixer;
-  importName: string;
-  moduleName: string;
-  node: TSESTree.Node;
-}): TSESLint.RuleFix | undefined {
+}: ImportAddParams): RuleFix | undefined {
   const fullImport = `import { ${importName} } from '${moduleName}';\n`;
   const importDeclarations = getImportDeclarations(node, moduleName);
 
@@ -56,12 +69,19 @@ export function getImportAddFix({
   return fixer.insertTextAfter(importClause, replacementText);
 }
 
-export function getImportRemoveFix(
-  sourceCode: Readonly<TSESLint.SourceCode>,
-  importDeclarations: readonly TSESTree.ImportDeclaration[],
-  importName: string,
-  fixer: TSESLint.RuleFixer,
-): TSESLint.RuleFix | undefined {
+type ImportRemoveParams = {
+  sourceCode: SourceCode;
+  importDeclarations: readonly ImportDeclaration[];
+  importName: string;
+  fixer: RuleFixer;
+};
+
+export function getImportRemoveFix({
+  sourceCode,
+  importDeclarations,
+  importName,
+  fixer,
+}: ImportRemoveParams): RuleFix | undefined {
   const { importDeclaration, importSpecifier } =
     getImportDeclarationSpecifier(importDeclarations, importName) ?? {};
 
@@ -97,27 +117,38 @@ export function getImportRemoveFix(
   ]);
 }
 
-export function getImplementsSchemaFixer(
-  { id, implements: classImplements }: TSESTree.ClassDeclaration,
-  interfaceName: string,
-): {
+type ImplementsSchemaParams = {
+  id: ClassDeclaration['id'];
+  implements: TSClassImplements;
+};
+
+export function getImplementsSchemaFixer({
+  id,
+  implements: classImplements,
+}: ImplementsSchemaParams): {
   readonly implementsNodeReplace:
-    | TSESTree.TSClassImplements
-    | TSESTree.Identifier;
+    | TSClassImplements
+    | Identifier;
   readonly implementsTextReplace: string;
 } {
   const [implementsNodeReplace, implementsTextReplace] = classImplements
     ? [getLast(classImplements), `, ${interfaceName}`]
-    : [id as TSESTree.Identifier, ` implements ${interfaceName}`];
+    : [id as Identifier, ` implements ${interfaceName}`];
 
   return { implementsNodeReplace, implementsTextReplace } as const;
 }
 
-export function getDecoratorPropertyAddFix(
-  { expression }: TSESTree.Decorator,
-  fixer: TSESLint.RuleFixer,
-  text: string,
-): TSESLint.RuleFix | undefined {
+type DecoratorPropertyAddParams = {
+  expression: Decorator['expression'];
+  fixer: RuleFixer;
+  text: string;
+};
+
+export function getDecoratorPropertyAddFix({
+  expression,
+  fixer,
+  text,
+}: DecoratorPropertyAddParams): RuleFix | undefined {
   if (!isCallExpression(expression)) {
     return undefined;
   }
@@ -145,55 +176,7 @@ export function getDecoratorPropertyAddFix(
   return fixer.insertTextBefore(properties[0], `${text},`);
 }
 
-export function getImplementsRemoveFix(
-  sourceCode: Readonly<TSESLint.SourceCode>,
-  classDeclaration: TSESTree.ClassDeclaration,
-  interfaceName: string,
-  fixer: TSESLint.RuleFixer,
-): TSESLint.RuleFix | undefined {
-  const { implements: classImplements } = classDeclaration;
-
-  if (!classImplements) return undefined;
-
-  const identifier = getInterface(classDeclaration, interfaceName);
-
-  if (!identifier) return undefined;
-
-  const isFirstInterface = classImplements[0].expression === identifier;
-  const isLastInterface = getLast(classImplements).expression === identifier;
-  const hasSingleInterfaceImplemented = isFirstInterface && isLastInterface;
-  const tokenBeforeInterface = sourceCode.getTokenBefore(identifier);
-
-  if (hasSingleInterfaceImplemented) {
-    return !tokenBeforeInterface || !isImplementsToken(tokenBeforeInterface)
-      ? undefined
-      : fixer.removeRange([
-          tokenBeforeInterface.range[0],
-          classImplements[0].range[1],
-        ]);
-  }
-
-  if (isFirstInterface) {
-    const tokenAfterInterface = sourceCode.getTokenAfter(identifier);
-
-    return !tokenAfterInterface
-      ? undefined
-      : fixer.removeRange([identifier.range[0], tokenAfterInterface.range[1]]);
-  }
-
-  return !tokenBeforeInterface
-    ? undefined
-    : fixer.removeRange([tokenBeforeInterface.range[0], identifier.range[1]]);
-}
-
-export function getNodeToCommaRemoveFix(
-  sourceCode: Readonly<TSESLint.SourceCode>,
-  node: TSESTree.Node,
-  fixer: TSESLint.RuleFixer,
-): TSESLint.RuleFix {
-  const tokenAfterNode = sourceCode.getTokenAfter(node);
-
-  return tokenAfterNode && ASTUtils.isCommaToken(tokenAfterNode)
-    ? fixer.removeRange([node.range[0], tokenAfterNode.range[1]])
-    : fixer.remove(node);
-}
+type ImplementsRemoveParams = {
+  sourceCode: SourceCode;
+  classDeclaration: ClassDeclaration;
+  interfaceName: string
