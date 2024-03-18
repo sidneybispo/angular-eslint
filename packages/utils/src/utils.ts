@@ -1,46 +1,33 @@
 /**
- * ===============================================================================
- *
- * This file contains general purpose utilities which are not specific to one of
- * the plugins.
- *
- * ===============================================================================
+ * General-purpose utilities which are not specific to one of the plugins.
  */
 
 /**
- * Return the last item of the given array.
+ * Returns the last item of the given array.
  */
 export function getLast<T extends readonly unknown[]>(items: T): T[number] {
-  return items.slice(-1)[0];
+  return items[items.length - 1];
 }
 
-export const objectKeys = Object.keys as <T>(
-  o: T,
-) => readonly Extract<keyof T, string>[];
+export const objectKeys = Object.keys as <T>(o: T) => readonly Extract<keyof T, string>[];
 
 /**
  * Enforces the invariant that the input is an array.
  */
 export function arrayify<T>(value: T | readonly T[]): readonly T[] {
-  if (Array.isArray(value)) {
-    return value;
-  }
-  return (value ? [value] : []) as readonly T[];
+  return Array.isArray(value) ? value : (value ? [value] : []);
 }
 
-// Needed because in the current Typescript version (TS 3.3.3333), Boolean() cannot be used to perform a null check.
-// For more, see: https://github.com/Microsoft/TypeScript/issues/16655
-export const isNotNullOrUndefined = <T>(
-  input: null | undefined | T,
-): input is T => input !== null && input !== undefined;
+/**
+ * Checks if the input is not null or undefined.
+ */
+export const isNotNullOrUndefined = <T>(input: null | undefined | T): input is T => input != null;
 
 export const kebabToCamelCase = (value: string): string =>
-  value.replace(/-[a-zA-Z]/g, ({ 1: letterAfterDash }) =>
-    letterAfterDash.toUpperCase(),
-  );
+  value.replace(/-[a-zA-Z]/g, (match) => match[1].toUpperCase());
 
 /**
- * Convert an array to human-readable text.
+ * Converts an array to human-readable text.
  */
 export const toHumanReadableText = (items: readonly string[]): string => {
   const itemsLength = items.length;
@@ -49,19 +36,22 @@ export const toHumanReadableText = (items: readonly string[]): string => {
     return `"${items[0]}"`;
   }
 
-  return `${items
-    .map((item) => `"${item}"`)
-    .slice(0, itemsLength - 1)
-    .join(', ')} or "${[...items].pop()}"`;
+  return `${items.slice(0, -1).join(', ')} or "${items[itemsLength - 1]}"`;
 };
 
 export const toPattern = (value: readonly unknown[]): RegExp =>
-  RegExp(`^(${value.join('|')})$`);
+  new RegExp(`^(${value.join('|')})$`);
 
+/**
+ * Capitalizes the first letter of the given text.
+ */
 export function capitalize<T extends string>(text: T): Capitalize<T> {
-  return `${text[0].toUpperCase()}${text.slice(1)}` as Capitalize<T>;
+  return text.charAt(0).toUpperCase() + text.slice(1) as Capitalize<T>;
 }
 
+/**
+ * Removes brackets and whitespaces from the given text.
+ */
 export function withoutBracketsAndWhitespaces(text: string): string {
-  return text.replace(/[[\]\s]/g, '');
+  return text.replace(/[\[\]\s]/g, '');
 }
