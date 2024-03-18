@@ -1,45 +1,33 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
+// utils/local-registry-process.ts
+import { execSync } from 'child_process';
+
+export const runYarnInstall = () => execSync('yarn install');
+
+export const runNgAdd = (packageName: string) =>
+  execSync(`ng add ${packageName} --registry=http://localhost:4200/`);
+
+export const runConvertTSLintToESLint = (args: string[]) =>
+  execSync(`ng convert --from-to tslint=eslint ${args.join(' ')}`);
+
+// utils/require-uncached.ts
+const cache = new Map();
+
+export const requireUncached = <T>(modulePath: string): T => {
+  if (cache.has(modulePath)) {
+    cache.delete(modulePath);
+  }
+
+  const moduleExports = require(modulePath);
+  cache.set(modulePath, moduleExports);
+  return moduleExports;
+};
+
+// utils/run-lint.ts
+import { execSync } from 'child_process';
+
+export const runLint = (fixtureDirectory: string) =>
+  execSync(`ng lint ${fixtureDirectory}`).toString();
+
+// __tests__/convert-tslint-to-eslint.test.ts
 import path from 'path';
-import {
-  FIXTURES_DIR,
-  LONG_TIMEOUT_MS,
-  runConvertTSLintToESLint,
-  runNgAdd,
-  runYarnInstall,
-} from '../utils/local-registry-process';
-import { requireUncached } from '../utils/require-uncached';
-import { runLint } from '../utils/run-lint';
-
-const fixtureDirectory = 'v1123-single-project-yarn-auto-convert';
-
-describe(fixtureDirectory, () => {
-  jest.setTimeout(LONG_TIMEOUT_MS);
-
-  beforeEach(async () => {
-    process.chdir(path.join(FIXTURES_DIR, fixtureDirectory));
-    await runYarnInstall();
-    await runNgAdd();
-    await runConvertTSLintToESLint([
-      '--no-interactive',
-      '--project',
-      'v1123-single-project-yarn-auto-convert',
-    ]);
-  });
-
-  it('it should pass linting after converting the out of the box Angular CLI setup (with a custom prefix set)', async () => {
-    expect(
-      requireUncached(
-        '../fixtures/v1123-single-project-yarn-auto-convert/.eslintrc.json',
-      ),
-    ).toMatchSnapshot();
-
-    expect(
-      requireUncached(
-        '../fixtures/v1123-single-project-yarn-auto-convert/angular.json',
-      ).projects['v1123-single-project-yarn-auto-convert'].architect.lint,
-    ).toMatchSnapshot();
-
-    const lintOutput = await runLint(fixtureDirectory);
-    expect(lintOutput).toMatchSnapshot();
-  });
-});
+import { runY
