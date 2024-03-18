@@ -1,11 +1,11 @@
 import type { RequestOptions } from 'https';
-import https from 'https';
 import type { CodelyzerRule, PRDetails } from './interfaces';
+import fetch from 'node-fetch';
 
 /**
  * Calls the github api for the specified path and returns a Promise for the json response.
  */
-const callGithubApi = <T>(optionOverrides: RequestOptions) => {
+const callGithubApi = async <T>(optionOverrides: RequestOptions): Promise<T> => {
   const options = {
     protocol: 'https:',
     host: 'api.github.com',
@@ -15,19 +15,15 @@ const callGithubApi = <T>(optionOverrides: RequestOptions) => {
     ...optionOverrides,
   };
 
-  return new Promise<T>((resolve) => {
-    https.get(options, (response) => {
-      let data = '';
-
-      response.on('data', (chunk) => {
-        data += chunk;
-      });
-
-      response.on('end', () => {
-        resolve(JSON.parse(data));
-      });
-    });
-  });
+  try {
+    const response = await fetch(options);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    // Handle error
+    console.error(error);
+    throw error;
+  }
 };
 
 /**
@@ -52,8 +48,4 @@ export const getAngularESLintPRs = async (): Promise<PRDetails[]> => {
 export const getCodelyzerRulesList = async (): Promise<CodelyzerRule[]> => {
   const rulesJson = await callGithubApi<CodelyzerRule[]>({
     host: 'raw.githubusercontent.com',
-    path: '/mgechev/codelyzer/master/docs/_data/rules.json',
-  });
-
-  return rulesJson;
-};
+    path: '/mgechev/codelyzer/master/docs/_data
