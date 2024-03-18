@@ -1,31 +1,25 @@
-import type { TmplAstElement } from '@angular-eslint/bundled-angular-compiler';
-import type { ARIARoleRelationConcept } from 'aria-query';
+import { TmplAstElement } from '@angular-eslint/bundled-angular-compiler';
+import { ARIARoleRelationConcept } from 'aria-query';
 import { attributesComparator } from '../attributes-comparator';
-import { getDomElements } from '../get-dom-elements';
-import { getInteractiveElementAXObjectSchemas } from './get-interactive-element-ax-object-schemas';
-import { getInteractiveElementRoleSchemas } from './get-interactive-element-role-schemas';
-import { getNonInteractiveElementRoleSchemas } from './get-non-interactive-element-role-schemas';
+import {
+  getDomElements,
+  getInteractiveElementAXObjectSchemas,
+  getInteractiveElementRoleSchemas,
+  getNonInteractiveElementRoleSchemas,
+} from '../dom-helpers';
 
-function checkIsInteractiveElement(node: TmplAstElement): boolean {
-  function elementSchemaMatcher({ attributes, name }: ARIARoleRelationConcept) {
-    return node.name === name && attributesComparator(attributes ?? [], node);
-  }
-  // Check in elementRoles for inherent interactive role associations for
-  // this element.
-  const isInherentInteractiveElement =
-    getInteractiveElementRoleSchemas().some(elementSchemaMatcher);
-  if (isInherentInteractiveElement) {
-    return true;
-  }
-  // Check in elementRoles for inherent non-interactive role associations for
-  // this element.
-  const isInherentNonInteractiveElement =
-    getNonInteractiveElementRoleSchemas().some(elementSchemaMatcher);
-  if (isInherentNonInteractiveElement) {
-    return false;
-  }
-  // Check in elementAXObjects for AX Tree associations for this element.
-  return getInteractiveElementAXObjectSchemas().some(elementSchemaMatcher);
+interface ElementSchemaMatcher {
+  (schema: ARIARoleRelationConcept): boolean;
+}
+
+function checkIsInteractiveElement(node: TmplAstElement, matcher: ElementSchemaMatcher): boolean {
+  return (
+    matcher({
+      attributes: node.attributes,
+      name: node.name,
+    }) ||
+    !getNonInteractiveElementRoleSchemas().some(matcher)
+  );
 }
 
 /**
@@ -35,5 +29,12 @@ function checkIsInteractiveElement(node: TmplAstElement): boolean {
  * it's intention is to be interacted with on the DOM.
  */
 export function isInteractiveElement(node: TmplAstElement): boolean {
-  return getDomElements().has(node.name) && checkIsInteractiveElement(node);
+  const matcher = (schema: ARIARoleRelationConcept) =>
+    getInteractiveElementRoleSchemas().some(schema) ||
+    getInteractiveElementAXObjectSchemas().some(schema);
+
+  return (
+    getDomElements().has(node.name) &&
+    checkIsInteractiveElement(node, matcher)
+  );
 }
