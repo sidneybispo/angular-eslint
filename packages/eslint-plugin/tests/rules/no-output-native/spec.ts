@@ -1,12 +1,17 @@
 import { RuleTester } from '@angular-eslint/utils';
 import rule, { RULE_NAME } from '../../../src/rules/no-output-native';
-import { invalid, valid } from './cases';
+import { fileNames } from './cases';
 
 const ruleTester = new RuleTester({
-  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    ecmaVersion: 6,
+    sourceType: 'module',
+  },
 });
 
-ruleTester.run(RULE_NAME, rule, {
-  valid,
-  invalid,
-});
+const testCases = {
+  valid: fileNames.filter(fileName => fileName.startsWith('valid-')),
+  invalid: fileNames.filter(fileName => fileName.startsWith('invalid-')),
+};
+
+ruleTester.run(RULE_NAME, rule, testCases);
