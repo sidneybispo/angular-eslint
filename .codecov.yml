@@ -1,12 +1,10 @@
 coverage:
   status:
-    patch:
+    pull_request:
       default:
         target: 90%
     project:
       default:
-        target: auto
+        target: "auto"
         threshold: 2%
-comment:
-  layout: diff, flags, files
-  require_changes: true
+
