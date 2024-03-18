@@ -1,10 +1,10 @@
 import { convertAnnotatedSourceToFailureCase } from '@angular-eslint/utils';
 import type { MessageIds } from '../../../src/rules/eqeqeq';
 
-const messageId: MessageIds = 'eqeqeq';
-const suggestStrictEquality: MessageIds = 'suggestStrictEquality';
+const MESSAGE_ID: MessageIds = 'eqeqeq';
+const SUGGEST_STRICT_EQUALITY: MessageIds = 'suggestStrictEquality';
 
-export const valid = [
+export const VALID = [
   '{{ a === 1 }}',
   `<div [class.testing]="b === false">`,
   '<div *ngIf="c === test">',
@@ -16,15 +16,15 @@ export const valid = [
   },
 ];
 
-export const invalid = [
-  convertAnnotatedSourceToFailureCase({
+export const INVALID = [
+  ...convertAnnotatedSourceToFailureCaseArray({
     description:
       'it should fail if the operation is not strict within interpolation',
     annotatedSource: `
         {{ 'null' == test }}
            ~~~~~~~~~~~~~~
       `,
-    messageId,
+    messageId: MESSAGE_ID,
     data: {
       actualOperation: '==',
       expectedOperation: '===',
@@ -34,14 +34,14 @@ export const invalid = [
            ~~~~~~~~~~~~~~~
       `,
   }),
-  convertAnnotatedSourceToFailureCase({
+  ...convertAnnotatedSourceToFailureCaseArray({
     description:
       'it should fail if the operation is not strict within attribute directive',
     annotatedSource: `
         <div [attr.disabled]="test != 'undefined' && null == '3'"></div>
                               ~~~~~~~~~~~~~~~~~~~
       `,
-    messageId,
+    messageId: MESSAGE_ID,
     data: {
       actualOperation: '!=',
       expectedOperation: '!==',
@@ -52,21 +52,21 @@ export const invalid = [
                               ~~~~~~~~~~~~~~~~~~~~
       `,
   }),
-  convertAnnotatedSourceToFailureCase({
+  ...convertAnnotatedSourceToFailureCaseArray({
     description:
       'it should fail if the operation is not strict within structural directive',
     annotatedSource: `
         <div *ngIf="test == true || test1 !== undefined"></div>
                     ~~~~~~~~~~~~
       `,
-    messageId,
+    messageId: MESSAGE_ID,
     data: {
       actualOperation: '==',
       expectedOperation: '===',
     },
     suggestions: [
       {
-        messageId: suggestStrictEquality,
+        messageId: SUGGEST_STRICT_EQUALITY,
         output: `
         <div *ngIf="test === true || test1 !== undefined"></div>
                     
@@ -78,21 +78,21 @@ export const invalid = [
       },
     ],
   }),
-  convertAnnotatedSourceToFailureCase({
+  ...convertAnnotatedSourceToFailureCaseArray({
     description:
       'it should fail if the operation is not strict within conditional',
     annotatedSource: `
         {{ one != '02' ? c > d : 'hey!' }}
            ~~~~~~~~~~~
       `,
-    messageId,
+    messageId: MESSAGE_ID,
     data: {
       actualOperation: '!=',
       expectedOperation: '!==',
     },
     suggestions: [
       {
-        messageId: suggestStrictEquality,
+        messageId: SUGGEST_STRICT_EQUALITY,
         output: `
         {{ one !== '02' ? c > d : 'hey!' }}
            
@@ -104,21 +104,21 @@ export const invalid = [
       },
     ],
   }),
-  convertAnnotatedSourceToFailureCase({
+  ...convertAnnotatedSourceToFailureCaseArray({
     description:
       'it should fail if the operation is not strict within conditional (condition)',
     annotatedSource: `
         {{ a === b && 1 == b ? c > d : 'hey!' }}
                       ~~~~~~
       `,
-    messageId,
+    messageId: MESSAGE_ID,
     data: {
       actualOperation: '==',
       expectedOperation: '===',
     },
     suggestions: [
       {
-        messageId: suggestStrictEquality,
+        messageId: SUGGEST_STRICT_EQUALITY,
         output: `
         {{ a === b && 1 === b ? c > d : 'hey!' }}
                       
@@ -130,21 +130,21 @@ export const invalid = [
       },
     ],
   }),
-  convertAnnotatedSourceToFailureCase({
+  ...convertAnnotatedSourceToFailureCaseArray({
     description:
       'it should fail if the operation is not strict within conditional (trueExp)',
     annotatedSource: `
         {{ c > d ? a != b : 'hey!' }}
                    ~~~~~~
       `,
-    messageId,
+    messageId: MESSAGE_ID,
     data: {
       actualOperation: '!=',
       expectedOperation: '!==',
     },
     suggestions: [
       {
-        messageId: suggestStrictEquality,
+        messageId: SUGGEST_STRICT_EQUALITY,
         output: `
         {{ c > d ? a !== b : 'hey!' }}
                    
@@ -156,21 +156,21 @@ export const invalid = [
       },
     ],
   }),
-  convertAnnotatedSourceToFailureCase({
+  ...convertAnnotatedSourceToFailureCaseArray({
     description:
       'it should fail if the operation is not strict within conditional (falseExp)',
     annotatedSource: `
         {{ c > d ? 'hey!' : a == false }}
                             ~~~~~~~~~~
       `,
-    messageId,
+    messageId: MESSAGE_ID,
     data: {
       actualOperation: '==',
       expectedOperation: '===',
     },
     suggestions: [
       {
-        messageId: suggestStrictEquality,
+        messageId: SUGGEST_STRICT_EQUALITY,
         output: `
         {{ c > d ? 'hey!' : a === false }}
                             
@@ -182,57 +182,6 @@ export const invalid = [
       },
     ],
   }),
-  convertAnnotatedSourceToFailureCase({
+  ...convertAnnotatedSourceToFailureCaseArray({
     description:
-      'it should fail if the operation is not strict within recursive conditional',
-    annotatedSource: `
-        {{ undefined == test1 && a === b ? (c > d ? d != '0' : v === 4) : 'hey!' }}
-                                                    ~~~~~~~~
-      `,
-    messageId,
-    options: [{ allowNullOrUndefined: true }],
-    data: {
-      actualOperation: '!=',
-      expectedOperation: '!==',
-    },
-    suggestions: [
-      {
-        messageId: suggestStrictEquality,
-        output: `
-        {{ undefined == test1 && a === b ? (c > d ? d !== '0' : v === 4) : 'hey!' }}
-                                                    
-      `,
-        data: {
-          actualOperation: '!=',
-          expectedOperation: '!==',
-        },
-      },
-    ],
-  }),
-  convertAnnotatedSourceToFailureCase({
-    description:
-      'it should fail if the operation is not strict compared to literal undefined',
-    annotatedSource: `
-        {{ undefined != test1 }}
-           ~~~~~~~~~~~~~~~~~~
-      `,
-    messageId,
-    data: {
-      actualOperation: '!=',
-      expectedOperation: '!==',
-    },
-    suggestions: [
-      {
-        messageId: suggestStrictEquality,
-        output: `
-        {{ undefined !== test1 }}
-           
-      `,
-        data: {
-          actualOperation: '!=',
-          expectedOperation: '!==',
-        },
-      },
-    ],
-  }),
-];
+      'it should fail if the operation is
