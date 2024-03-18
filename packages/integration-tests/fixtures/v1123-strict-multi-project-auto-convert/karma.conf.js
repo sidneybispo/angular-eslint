@@ -6,17 +6,17 @@ module.exports = function (config) {
     basePath: '',
     frameworks: ['jasmine', '@angular-devkit/build-angular'],
     plugins: [
-      require('karma-jasmine'),
-      require('karma-chrome-launcher'),
-      require('karma-jasmine-html-reporter'),
-      require('karma-coverage'),
-      require('@angular-devkit/build-angular/plugins/karma')
+      'karma-jasmine',
+      'karma-chrome-launcher',
+      'karma-jasmine-html-reporter',
+      'karma-coverage',
+      '@angular-devkit/build-angular/plugins/karma'
     ],
     client: {
       clearContext: false // leave Jasmine Spec Runner output visible in browser
     },
     coverageReporter: {
-      dir: require('path').join(__dirname, './coverage/v1123-strict-multi-project-auto-convert'),
+      dir: './coverage/v1123-strict-multi-project-auto-convert',
       subdir: '.',
       reporters: [
         { type: 'html' },
