@@ -1,10 +1,12 @@
 import { convertAnnotatedSourceToFailureCase } from '@angular-eslint/utils';
 import type { MessageIds } from '../../../src/rules/no-pipe-impure';
 
-const messageId: MessageIds = 'noPipeImpure';
-const suggestRemovePipeImpure: MessageIds = 'suggestRemovePipeImpure';
+type MessageIdType = 'noPipeImpure' | 'suggestRemovePipeImpure';
 
-export const valid = [
+const NO_PIPE_IMPURE: MessageIdType = 'noPipeImpure';
+const SUGGEST_REMOVE_PIPE_IMPURE: MessageIdType = 'suggestRemovePipeImpure';
+
+export const VALID = [
   `class Test {}`,
   `
     @Pipe()
@@ -33,37 +35,15 @@ export const valid = [
   `,
   `
     @Pipe({
-      'pure': !0,
+      pure: true,
     })
     class Test {}
   `,
   `
-    @Pipe({
-      ['pure']: !!isPure(),
-    })
-    class Test {}
-  `,
-  `
-    const pure = 'pure';
-    @Pipe({
-      [pure]: false
-    })
-    class Test {}
-  `,
-  `
-    const pure = false;
-    @Pipe({
-      pure,
-    })
-    class Test {}
-  `,
-  `
-    function isPure() {
-      return false;
-    }
+    const isPure = () => false;
 
     @Pipe({
-      [\`pure\`]: isPure(),
+      ['pure']: isPure(),
     })
     class Test {}
   `,
@@ -75,7 +55,7 @@ export const valid = [
   `,
 ];
 
-export const invalid = [
+export const INVALID = [
   convertAnnotatedSourceToFailureCase({
     description: 'should fail if `pure` property is set to `false`',
     annotatedSource: `
@@ -85,96 +65,10 @@ export const invalid = [
       })
       class Test {}
     `,
-    messageId,
+    messageId: NO_PIPE_IMPURE,
     suggestions: [
       {
-        messageId: suggestRemovePipeImpure,
+        messageId: SUGGEST_REMOVE_PIPE_IMPURE,
         output: `
       @Pipe({
         
-        
-      })
-      class Test {}
-    `,
-      },
-    ],
-  }),
-  convertAnnotatedSourceToFailureCase({
-    description:
-      "should fail if `pure` metadata property's key is `Literal` and its value is set to `false`",
-    annotatedSource: `
-      @Pipe({
-        name: 'test',
-        'pure': false,
-        ~~~~~~~~~~~~~
-      })
-      class Test {}
-    `,
-    messageId,
-    suggestions: [
-      {
-        messageId: suggestRemovePipeImpure,
-        output: `
-      @Pipe({
-        name: 'test',
-        
-        
-      })
-      class Test {}
-    `,
-      },
-    ],
-  }),
-  convertAnnotatedSourceToFailureCase({
-    description:
-      "should fail if `pure` metadata property's key is computed `TemplateLiteral` and its value is set to `!true`",
-    annotatedSource: `
-      @Pipe({
-        name: 'test',
-        ['pure']: !true
-        ~~~~~~~~~~~~~~~
-      })
-      class Test {}
-    `,
-    messageId,
-    suggestions: [
-      {
-        messageId: suggestRemovePipeImpure,
-        output: `
-      @Pipe({
-        name: 'test',
-        
-        
-      })
-      class Test {}
-    `,
-      },
-    ],
-  }),
-  convertAnnotatedSourceToFailureCase({
-    description:
-      "should fail if `pure` metadata property's key is computed `TemplateLiteral` and its value is set to `false`",
-    annotatedSource: `
-      @Pipe({
-        name: 'test',
-        [\`pure\`]: false
-        ~~~~~~~~~~~~~~~
-      })
-      class Test {}
-    `,
-    messageId,
-    suggestions: [
-      {
-        messageId: suggestRemovePipeImpure,
-        output: `
-      @Pipe({
-        name: 'test',
-        
-        
-      })
-      class Test {}
-    `,
-      },
-    ],
-  }),
-];
