@@ -1,17 +1,14 @@
-import {
-  updateReadmeFile,
-  regenerateReadmeRulesList,
-} from '../utils/generate-rules-list';
+import { updateReadmeFile, regenerateReadmeRulesList } from '../utils/generate-rules-list';
 
-/**
- * Updates the README.md file with the regenerated Rules List
- */
-(async function updateReadmeRulesList() {
+const updateReadmeRulesListAsync = async () => {
   try {
     const updatedReadme = await regenerateReadmeRulesList();
-    updateReadmeFile(updatedReadme);
+    await updateReadmeFile(updatedReadme);
+    console.log('README.md file updated successfully');
   } catch (err) {
-    console.error(err);
+    console.error('Error updating README.md file:', err);
     process.exit(1);
   }
-})();
+};
+
+updateReadmeRulesListAsync();
