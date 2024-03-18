@@ -1,20 +1,24 @@
-import { dirname } from 'path';
-import { mkdirSync, statSync } from 'fs';
+import { dirname, existsSync } from 'path';
+import { mkdir, stat } from 'fs/promises';
 
-export function createDirectory(directoryPath: string): void {
+export async function createDirectory(directoryPath: string): Promise<void> {
   const parentPath = dirname(directoryPath);
-  if (!directoryExists(parentPath)) {
-    createDirectory(parentPath);
+  if (!await directoryExists(parentPath)) {
+    await createDirectory(parentPath);
   }
-  if (!directoryExists(directoryPath)) {
-    mkdirSync(directoryPath);
+  if (!await directoryExists(directoryPath)) {
+    await mkdir(directoryPath, { recursive: true });
   }
 }
 
-function directoryExists(name: string): boolean {
+async function directoryExists(name: string): Promise<boolean> {
   try {
-    return statSync(name).isDirectory();
-  } catch {
-    return false;
+    const stats = await stat(name);
+    return stats.isDirectory();
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return false;
+    }
+    throw error;
   }
 }
