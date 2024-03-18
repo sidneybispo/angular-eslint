@@ -1,32 +1,21 @@
 import type { TSESLint } from '@typescript-eslint/experimental-utils';
 
 /**
- * When leveraging the convertAnnotatedSourceToFailureCase() utility, the
- * following characters are eligible to be used in the source code of expected
- * failure cases within ESLint unit tests in order to provide an easy way to
- * annotate where one or more ESLint errors are expected to occur within that
- * source.
- *
- * See the convertAnnotatedSourceToFailureCase() utility itself for more details.
+ * The special characters that can be used to annotate the source code in expected failure cases.
  */
-export const SPECIAL_UNDERLINE_CHARS = [
-  '~',
-  '^',
-  '#',
-  '%',
-  '¶',
-  '*',
-  '¨',
-  '@',
-] as const;
+export const SPECIAL_UNDERLINE_CHARS: readonly ('~' | '^' | '#' | '%' | '¶' | '*' | '¨' | '@')[] =
+  [
+    '~',
+    '^',
+    '#',
+    '%',
+    '¶',
+    '*',
+    '¨',
+    '@',
+  ];
 
-type MultipleErrorOptions<TMessageIds extends string> = BaseErrorOptions & {
-  readonly messages: readonly (Message<TMessageIds> & {
-    readonly char: typeof SPECIAL_UNDERLINE_CHARS[number];
-  })[];
-};
-
-type BaseErrorOptions = {
+type BaseErrorOptions<TMessageData = unknown> = {
   readonly description: string;
   readonly annotatedSource: string;
   readonly options?: readonly unknown[];
@@ -36,64 +25,49 @@ type BaseErrorOptions = {
 
 type Message<TMessageIds extends string> = {
   readonly messageId: TMessageIds;
-  readonly data?: Record<string, unknown>;
+  readonly data?: TMessageData;
   readonly suggestions?: TSESLint.SuggestionOutput<TMessageIds>[];
 };
 
-type SingleErrorOptions<TMessageIds extends string> = BaseErrorOptions &
-  Message<TMessageIds>;
+type SingleErrorOptions<TMessageIds extends string, TMessageData = unknown> =
+  BaseErrorOptions<TMessageData> & Message<TMessageIds>;
+
+type MultipleErrorOptions<TMessageIds extends string, TMessageData = unknown> =
+  BaseErrorOptions<TMessageData> & {
+    readonly messages: readonly (Message<TMessageIds> & {
+      readonly char: typeof SPECIAL_UNDERLINE_CHARS[number];
+    })[];
+  };
 
 /**
- * convertAnnotatedSourceToFailureCase() provides an ergonomic way to easily write
- * expected failure cases for ESLint rules by allowing you to directly annotate the
- * source code for the case with one or more of the values in `SPECIAL_UNDERLINE_CHARS`.
+ * Convert an annotated source code string into a failure case for ESLint rules.
  *
- * This not only makes the unit tests easier to write because of the time saved in figuring
- * out location data in terms of lines and columns, but also far easier to read, which is
- * arguably much more important.
- *
- * Here is a real-world example of using the utility:
- *
- * ```ts
- *  convertAnnotatedSourceToFailureCase({
- *    description: 'should fail when Pipe has no prefix ng',
- *    annotatedSource: `
- *        @Pipe({
- *          name: 'foo-bar'
- *                ~~~~~~~~~
- *        })
- *        class Test {}
- *    `,
- *    messageId: 'pipePrefix,
- *    options: [{ prefixes: ['ng'] }],
- *    data: { prefixes: '"ng"' },
- *  }),
- * ```
- *
- * NOTE: The description is purely for documentation purposes. It is not used in the test.
+ * @param errorOptions - The options for the failure case.
+ * @returns A failure case for the ESLint rule.
  */
-export function convertAnnotatedSourceToFailureCase<TMessageIds extends string>(
-  errorOptions: SingleErrorOptions<TMessageIds>,
-): TSESLint.InvalidTestCase<TMessageIds, readonly unknown[]>;
-export function convertAnnotatedSourceToFailureCase<TMessageIds extends string>(
-  errorOptions: MultipleErrorOptions<TMessageIds>,
-): TSESLint.InvalidTestCase<TMessageIds, readonly unknown[]>;
-export function convertAnnotatedSourceToFailureCase<TMessageIds extends string>(
-  errorOptions:
-    | SingleErrorOptions<TMessageIds>
-    | MultipleErrorOptions<TMessageIds>,
-): TSESLint.InvalidTestCase<TMessageIds, readonly unknown[]> {
-  const messages: MultipleErrorOptions<TMessageIds>['messages'] =
-    'messageId' in errorOptions
-      ? [{ ...errorOptions, char: '~' }]
-      : errorOptions.messages;
+export function convertAnnotatedSourceToFailureCase<
+  TMessageIds extends string,
+  TMessageData = unknown,
+>(errorOptions: SingleErrorOptions<TMessageIds, TMessageData>): TSESLint.InvalidTestCase<TMessageIds, readonly unknown[]>;
+export function convertAnnotatedSourceToFailureCase<
+  TMessageIds extends string,
+  TMessageData = unknown,
+>(errorOptions: MultipleErrorOptions<TMessageIds, TMessageData>): TSESLint.InvalidTestCase<TMessageIds, readonly unknown[]>;
+export function convertAnnotatedSourceToFailureCase<
+  TMessageIds extends string,
+  TMessageData = unknown,
+>(errorOptions: SingleErrorOptions<TMessageIds, TMessageData> | MultipleErrorOptions<TMessageIds, TMessageData>): TSESLint.InvalidTestCase<TMessageIds, readonly unknown[]> {
+  const messages = 'messageId' in errorOptions
+    ? [{ ...errorOptions, char: '~' }]
+    : errorOptions.messages;
+
   let parsedSource = '';
   const errors: TSESLint.TestCaseError<TMessageIds>[] = messages.map(
     ({ char: currentValueChar, data, messageId, suggestions }) => {
       const otherChars = messages
         .map(({ char }) => char)
         .filter((char) => char !== currentValueChar);
-      const parsedForChar = parseInvalidSource(
+      const parsedForChar = parseInvalidSource<typeof currentValueChar, TMessageData>(
         errorOptions.annotatedSource,
         currentValueChar,
         otherChars,
@@ -137,10 +111,11 @@ type SourcePosition = {
   readonly line: number;
 };
 
-type ExpectedFailure = {
+type ExpectedFailure<TMessageData = unknown> = {
   readonly endPosition?: SourcePosition;
   readonly message: string;
   readonly startPosition?: SourcePosition;
+  readonly data?: TMessageData;
 };
 
 function escapeRegexp(value: string) {
@@ -148,92 +123,8 @@ function escapeRegexp(value: string) {
 }
 
 /**
- * When testing a failure, we also test to see if the linter will report the correct place where
- * the source code doesn't match the rule.
+ * Parse an annotated source code string and extract the failure case information.
  *
- * For example, if you use a private property in your template, the linter should report _where_
- * did it happen. Because it's tedious to supply actual line/column number in the spec, we use
- * some custom syntax with "underlining" the problematic part with tildes:
- *
- * ```
- * template: '{{ foo }}'
- *               ~~~
- * ```
- *
- * When giving a spec which we expect to fail, we give it "source code" such as above, with tildes.
- * We call this kind of source code "annotated". This source code cannot be compiled (and thus
- * cannot be linted/tested), so we use this function to get rid of tildes, but maintain the
- * information about where the linter is supposed to catch error.
- *
- * The result of the function contains "cleaned" source (`.source`) and a `.failure` object which
- * contains the `.startPosition` and `.endPosition` of the tildes.
- *
- * @param source The annotated source code with tildes.
- * @param specialChar The character to look for; in the above example that's ~.
- * @param otherChars All other characters which should be ignored. Used when asserting multiple
- *                   failures where there are multiple invalid characters.
- * @returns {{source: string, failure: {message: string, startPosition: null, endPosition: any}}}
- */
-function parseInvalidSource(
-  source: string,
-  specialChar = '~',
-  otherChars: readonly string[] = [],
-): { readonly failure: ExpectedFailure; readonly source: string } {
-  let replacedSource: string;
-
-  if (otherChars.length === 0) {
-    replacedSource = source;
-  } else {
-    const patternAsStr = `[${otherChars.map(escapeRegexp).join('')}]`;
-    const pattern = RegExp(patternAsStr, 'g');
-    replacedSource = source.replace(pattern, ' ');
-  }
-
-  let col = 0;
-  let line = 0;
-  let lastCol = 0;
-  let lastLine = 0;
-  let startPosition: SourcePosition | undefined;
-
-  for (const currentChar of replacedSource) {
-    if (currentChar === '\n') {
-      col = 0;
-      line++;
-
-      continue;
-    }
-
-    col++;
-
-    if (currentChar !== specialChar) continue;
-
-    if (!startPosition) {
-      startPosition = {
-        character: col - 1,
-        line: line - 1,
-      };
-    }
-
-    lastCol = col;
-    lastLine = line - 1;
-  }
-
-  const endPosition: SourcePosition = {
-    character: lastCol,
-    line: lastLine,
-  };
-  const newSource = replacedSource.replace(
-    RegExp(escapeRegexp(specialChar), 'g'),
-    '',
-  );
-
-  return {
-    failure: {
-      endPosition,
-      message: '',
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      startPosition: startPosition!,
-    },
-    source: newSource,
-  };
-}
+ * @param source - The annotated source code string.
+ * @param specialChar - The special character used for annotations.
+ * @param otherChars - The other special characters
