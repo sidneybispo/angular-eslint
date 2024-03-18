@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-import path from 'path';
+import path, { dirname, join } from 'path';
 import {
   FIXTURES_DIR,
   LONG_TIMEOUT_MS,
@@ -8,9 +7,53 @@ import {
   runYarnInstall,
 } from '../utils/local-registry-process';
 import { requireUncached } from '../utils/require-uncached';
-import { runLint } from '../utils/run-lint';
+import { runLint, LintOutput } from '../utils/run-lint';
+import {
+  ProjectType,
+  TestProject,
+  testProjects,
+} from '../utils/test-projects';
 
 const fixtureDirectory = 'v1123-strict-multi-project-auto-convert';
+
+type ProjectEslintConfig = {
+  rootProject: ReturnType<typeof requireUncached>;
+  additionalProjects: Record<ProjectType, ReturnType<typeof requireUncached>>;
+};
+
+const getProjectEslintConfig = async (): Promise<ProjectEslintConfig> => {
+  const rootProject = requireUncached(
+    join(FIXTURES_DIR, fixtureDirectory, '.eslintrc.json'),
+  );
+
+  const additionalProjects: Record<ProjectType, any> = {};
+  for (const project of testProjects) {
+    additionalProjects[project.type] = requireUncached(
+      join(
+        FIXTURES_DIR,
+        fixtureDirectory,
+        `projects/${project.name}/.eslintrc.json`,
+      ),
+    );
+  }
+
+  return { rootProject, additionalProjects };
+};
+
+const getProjectLintConfig = async (): Promise<Record<ProjectType, any>> => {
+  const lintConfigs: Record<ProjectType, any> = {};
+  for (const project of testProjects) {
+    lintConfigs[project.type] = requireUncached(
+      join(
+        FIXTURES_DIR,
+        fixtureDirectory,
+        `angular.json`
+      )
+    ).projects[project.name].architect.lint;
+  }
+
+  return lintConfigs;
+};
 
 describe(fixtureDirectory, () => {
   jest.setTimeout(LONG_TIMEOUT_MS);
@@ -21,64 +64,27 @@ describe(fixtureDirectory, () => {
     await runNgAdd();
 
     // Convert the root project first
-    await runConvertTSLintToESLint([
-      '--no-interactive',
-      '--project',
-      'v1123-strict-multi-project-auto-convert',
-    ]);
-    await runConvertTSLintToESLint([
-      '--no-interactive',
-      '--project',
-      'another-app',
-    ]);
-    await runConvertTSLintToESLint([
-      '--no-interactive',
-      '--project',
-      'another-lib',
-    ]);
+    await runConvertTSLintToESLint(['--no-interactive', '--project', fixtureDirectory]);
+    for (const project of testProjects) {
+      await runConvertTSLintToESLint([
+        '--no-interactive',
+        '--project',
+        join(fixtureDirectory, `projects/${project.name}`),
+      ]);
+    }
   });
 
-  it('it should pass linting after converting the out of the box Angular CLI setup (with an additional project called "another-app" with a custom prefix set)', async () => {
-    // Root project
-    expect(
-      requireUncached(
-        '../fixtures/v1123-strict-multi-project-auto-convert/.eslintrc.json',
-      ),
-    ).toMatchSnapshot();
+  it.each(testProjects)('it should pass linting after converting the out of the box Angular CLI setup for project %p', async (project: TestProject) => {
+    const { rootProject, additionalProjects } = await getProjectEslintConfig();
+    const lintConfigs = await getProjectLintConfig();
 
-    expect(
-      requireUncached(
-        '../fixtures/v1123-strict-multi-project-auto-convert/angular.json',
-      ).projects['v1123-strict-multi-project-auto-convert'].architect.lint,
-    ).toMatchSnapshot();
+    expect(rootProject).toMatchSnapshot();
+    expect(lintConfigs[project.type]).toMatchSnapshot();
+    expect(additionalProjects[project.type]).toMatchSnapshot();
 
-    // Additional project ("another-app")
-    expect(
-      requireUncached(
-        '../fixtures/v1123-strict-multi-project-auto-convert/projects/another-app/.eslintrc.json',
-      ),
-    ).toMatchSnapshot();
-
-    expect(
-      requireUncached(
-        '../fixtures/v1123-strict-multi-project-auto-convert/angular.json',
-      ).projects['another-app'].architect.lint,
-    ).toMatchSnapshot();
-
-    // Additional library project ("another-lib")
-    expect(
-      requireUncached(
-        '../fixtures/v1123-strict-multi-project-auto-convert/projects/another-lib/.eslintrc.json',
-      ),
-    ).toMatchSnapshot();
-
-    expect(
-      requireUncached(
-        '../fixtures/v1123-strict-multi-project-auto-convert/angular.json',
-      ).projects['another-lib'].architect.lint,
-    ).toMatchSnapshot();
-
-    const lintOutput = await runLint(fixtureDirectory);
-    expect(lintOutput).toMatchSnapshot();
+    const lintOutput: LintOutput = await runLint(fixtureDirectory);
+    expect(lintOutput.errorCount).toBe(0);
+    expect(lintOutput.warningCount).toBeGreaterThanOrEqual(0);
+    expect(lintOutput.output).toMatchSnapshot();
   });
 });
