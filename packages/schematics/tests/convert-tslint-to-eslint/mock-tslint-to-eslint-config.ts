@@ -1,7 +1,27 @@
-import {
-  exampleProjectTslintJson,
-  exampleRootTslintJson,
-} from './example-tslint-configs';
+import { ChildProcess, execSync } from 'child_process';
+import { join } from 'path';
+import { Tree, readJson, schematic } from '@angular-devkit/schematics';
+
+interface ExampleTslintConfig {
+  tslintPrintConfigResult: Record<string, unknown>;
+}
+
+const exampleRootTslintJson: ExampleTslintConfig = {
+  tslintPrintConfigResult: {
+    rules: {
+      // example root tslint config
+    },
+  },
+};
+
+const exampleProjectTslintJson: ExampleTslintConfig = {
+  tslintPrintConfigResult: {
+    rulesDirectory: './node_modules/codelyzer',
+    rules: {
+      // example project tslint config
+    },
+  },
+};
 
 /**
  * The actual `findReportedConfiguration()` function is used to execute
@@ -15,15 +35,20 @@ export function mockFindReportedConfiguration(
   _: unknown,
   pathToTSLintJson: string,
 ): Record<string, unknown> {
-  if (pathToTSLintJson === 'tslint.json') {
-    return exampleRootTslintJson.tslintPrintConfigResult;
-  }
+  const examples = new Map<string, ExampleTslintConfig>([
+    ['tslint.json', exampleRootTslintJson],
+    ['projects/app1/tslint.json', exampleProjectTslintJson],
+  ]);
 
-  if (pathToTSLintJson === 'projects/app1/tslint.json') {
-    return exampleProjectTslintJson.tslintPrintConfigResult;
+  const example = examples.get(pathToTSLintJson);
+  if (example) {
+    return example.tslintPrintConfigResult;
   }
 
   throw new Error(
     `${pathToTSLintJson} is not a part of the supported mock data for these tests`,
   );
 }
+
+/**
+
