@@ -1,5 +1,47 @@
-* text=auto
-*.js eol=lf
-*.ts eol=lf
-*.tsx eol=lf
-*.yml eol=lf
+# This is a VSCode settings file that specifies the end-of-line (EOL) convention for certain file types.
+
+# The 'text' setting specifies that the EOL character for all text files should be LF (Unix-style).
+"text.eol": "lf",
+
+# The following settings specify the EOL convention for specific file types.
+
+# JavaScript files should use LF as the EOL character.
+"[javascript]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true
+    },
+    "files.eol": "\n"
+},
+
+# TypeScript files should use LF as the EOL character.
+"[typescript]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true
+    },
+    "files.eol": "\n"
+},
+
+# TypeScript JSX files should use LF as the EOL character.
+"[typescriptreact]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true
+    },
+    "files.eol": "\n"
+},
+
+# YAML files should use LF as the EOL character.
+"[yaml]": {
+    "editor.tabSize": 2,
+    "editor.
