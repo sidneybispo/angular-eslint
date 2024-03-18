@@ -1,13 +1,10 @@
-// @ts-check
 // Protractor configuration file, see link for more information
 // https://github.com/angular/protractor/blob/master/lib/config.ts
 
-const { SpecReporter } = require('jasmine-spec-reporter');
+import { Config } from 'protractor';
+import { SpecReporter } from 'jasmine-spec-reporter';
 
-/**
- * @type { import("protractor").Config }
- */
-exports.config = {
+const config: Config = {
   allScriptsTimeout: 11000,
   specs: [
     './src/**/*.e2e-spec.ts'
@@ -21,7 +18,7 @@ exports.config = {
   jasmineNodeOpts: {
     showColors: true,
     defaultTimeoutInterval: 30000,
-    print: function() {}
+    print: () => {}
   },
   onPrepare() {
     require('ts-node').register({
@@ -30,3 +27,5 @@ exports.config = {
     jasmine.getEnv().addReporter(new SpecReporter({ spec: { displayStacktrace: true } }));
   }
 };
+
+export { config };
