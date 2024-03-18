@@ -3,27 +3,29 @@ import type { MessageIds } from '../../../src/rules/cyclomatic-complexity';
 
 const messageId: MessageIds = 'cyclomaticComplexity';
 
-export const valid = [
-  {
-    code: `
+type TestCase = [code: string, options: any][];
+
+const valid: TestCase = [
+  [
+    `
         <div *ngIf="a === '1'">
           <div>{{ person.name }}</div>
         </div>
       `,
-    options: [{ maxComplexity: 1 }],
-  },
-  {
-    code: `
+    { maxComplexity: 1 },
+  ],
+  [
+    `
         <div *ngIf="a === '1'">
           <div *ngFor="let person of persons; trackBy: trackByFn">
             {{ person.name }}
           </div>
         </div>
       `,
-    options: [{ maxComplexity: 2 }],
-  },
-  {
-    code: `
+    { maxComplexity: 2 },
+  ],
+  [
+    `
         <div *ngIf="a === '1'">
           <div *ngFor="let person of persons; trackBy: trackByFn">
             {{ person.name }}
@@ -35,11 +37,11 @@ export const valid = [
           </div>
         </div>
       `,
-    options: [{ maxComplexity: 5 }],
-  },
+    { maxComplexity: 5 },
+  ],
 ];
 
-export const invalid = [
+const invalid: TestCase = [
   convertAnnotatedSourceToFailureCase({
     description:
       'it should fail if the cyclomatic complexity is higher than the maximum defined',
@@ -70,7 +72,7 @@ export const invalid = [
         data: { maxComplexity: 5, totalComplexity: 7 },
       },
     ],
-    options: [{ maxComplexity: 5 }],
+    options: { maxComplexity: 5 },
   }),
   convertAnnotatedSourceToFailureCase({
     description:
@@ -115,6 +117,11 @@ export const invalid = [
         data: { maxComplexity: 6, totalComplexity: 9 },
       },
     ],
-    options: [{ maxComplexity: 6 }],
+    options: { maxComplexity: 6 },
   }),
 ];
+
+function test(description: string, code: string, options: any, errors: any[]) {
+  describe(description, () => {
+    it('should return the expected errors', () => {
+      expect(convertAnnot
