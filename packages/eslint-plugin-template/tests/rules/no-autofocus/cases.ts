@@ -3,17 +3,17 @@ import type { MessageIds } from '../../../src/rules/no-autofocus';
 
 const messageId: MessageIds = 'noAutofocus';
 
-export const valid = [
-  '<input type="text">',
-  '<textarea autoFocus></textarea>',
-  '<div [autoFocus]="true"></div>',
-  '<button [appautofocus]="false">Click me!</button>',
-  '<app-drag-drop autofocus></app-drag-drop>',
-  '<app-textarea [autofocus]="false"></app-textarea>',
-];
+export const validElements = {
+  input: '<input type="text">',
+  textarea: '<textarea autoFocus></textarea>',
+  div: '<div [autoFocus]="true"></div>',
+  buttonWithAppAutofocus: '<button [appautofocus]="false">Click me!</button>',
+  customComponent: '<app-drag-drop autofocus></app-drag-drop>',
+  customComponentWithBinding: '<app-textarea [autofocus]="false"></app-textarea>',
+};
 
-export const invalid = [
-  convertAnnotatedSourceToFailureCase({
+export const invalidElements = {
+  button: convertAnnotatedSourceToFailureCase({
     description: 'should fail if `autofocus` attribute is present',
     annotatedSource: `
         <button autofocus>Click me!</button>
@@ -25,7 +25,7 @@ export const invalid = [
                 ~~~~~~~~~
       `,
   }),
-  convertAnnotatedSourceToFailureCase({
+  inputWithAttrBinding: convertAnnotatedSourceToFailureCase({
     description: 'should fail if `autofocus` attribute binding is present',
     annotatedSource: `
         <input [attr.autofocus]="false">
@@ -37,7 +37,7 @@ export const invalid = [
                ~~~~~~~~~~~~~~~~~~~~~~~~
       `,
   }),
-  convertAnnotatedSourceToFailureCase({
+  customComponentWithInputBinding: convertAnnotatedSourceToFailureCase({
     description: 'should fail if `autofocus` input binding is present',
     annotatedSource: `
         <app-test [autofocus]="true"></app-test>
@@ -51,4 +51,4 @@ export const invalid = [
                 ~~~~~~~~~
       `,
   }),
-];
+};
