@@ -1,12 +1,18 @@
 import { RuleTester } from '@angular-eslint/utils';
+import { parseSourceString } from '@typescript-eslint/parser';
 import rule, { RULE_NAME } from '../../../src/rules/no-lifecycle-call';
-import { invalid, valid } from './cases';
+import {
+  createRuleTesterTestCases,
+  TestCase,
+} from '../../test-utils/rule-tester-test-cases';
 
 const ruleTester = new RuleTester({
   parser: '@typescript-eslint/parser',
 });
 
-ruleTester.run(RULE_NAME, rule, {
-  valid,
-  invalid,
-});
+const testCases: TestCase[] = [
+  ...createRuleTesterTestCases(valid, parseSourceString),
+  ...createRuleTesterTestCases(invalid, parseSourceString),
+];
+
+ruleTester.run(RULE_NAME, rule, testCases);
