@@ -1,5 +1,6 @@
 import { convertAnnotatedSourceToFailureCase } from '@angular-eslint/utils';
 import type { MessageIds } from '../../../src/rules/use-pipe-transform-interface';
+import { Pipe, PipeTransform } from '@angular/core';
 
 const messageId: MessageIds = 'usePipeTransformInterface';
 
@@ -23,6 +24,12 @@ export const valid = [
   `
     @Pipe({ name: 'test' })
     class Test implements ng.PipeTransform {
+      transform(value: string) {}
+    }
+    `,
+  `
+    @Pipe({ name: 'test' })
+    class Test implements PipeTransform, AnotherInterface {
       transform(value: string) {}
     }
     `,
@@ -50,7 +57,7 @@ export const invalid = [
   }),
   convertAnnotatedSourceToFailureCase({
     description:
-      'should fail if a `Pipe` implements a interface, but not the `PipeTransform`',
+      'should fail if a `Pipe` implements a non-PipeTransform interface',
     annotatedSource: `
         import { HttpClient } from '@angular/common/http';
         import type { PipeTransform } from '@angular/core';
@@ -59,7 +66,7 @@ export const invalid = [
           Directive } from '@angular/core';
 
         @Pipe({ name: 'test' })
-        class Test implements AnInterface {
+        class Test implements HttpClient {
               ~~~~
           transform(value: string) {}
         }
@@ -73,7 +80,7 @@ export const invalid = [
           Directive } from '@angular/core';
 
         @Pipe({ name: 'test' })
-        class Test implements AnInterface, PipeTransform {
+        class Test implements HttpClient, PipeTransform {
               ~~~~
           transform(value: string) {}
         }
@@ -81,12 +88,12 @@ export const invalid = [
   }),
   convertAnnotatedSourceToFailureCase({
     description:
-      'should fail if a `Pipe` implements interfaces, but not the `PipeTransform`',
+      'should fail if a `Pipe` implements multiple interfaces, but not the `PipeTransform`',
     annotatedSource: `
         import type { OnInit } from '@angular/core';
 
         @OtherDecorator() @Pipe({ name: 'test' })
-        class Test implements AnInterface, AnotherInterface {
+        class Test implements OnInit {
               ~~~~
           transform(value: string) {}
         }
@@ -96,7 +103,7 @@ export const invalid = [
         import type { OnInit, PipeTransform } from '@angular/core';
 
         @OtherDecorator() @Pipe({ name: 'test' })
-        class Test implements AnInterface, AnotherInterface, PipeTransform {
+        class Test implements OnInit, PipeTransform {
               ~~~~
           transform(value: string) {}
         }
