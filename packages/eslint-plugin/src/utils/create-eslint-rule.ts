@@ -1,31 +1,66 @@
 import type { ESLintUtils } from '@typescript-eslint/experimental-utils';
-import { applyDefault } from '@typescript-eslint/experimental-utils/dist/eslint-utils';
+import { applyDefault, RuleTester } from '@typescript-eslint/experimental-utils';
 
-/**
- * We need to patch the RuleCreator in order to preserve the defaultOptions
- * to use as part of documentation generation.
- */
-const patchedRuleCreator: typeof ESLintUtils.RuleCreator = (urlCreator) => {
-  return function createRule({ name, meta, defaultOptions, create }) {
+const urlCreator = (ruleName: string) =>
+  `https://github.com/angular-eslint/angular-eslint/blob/master/packages/eslint-plugin-template/docs/rules/${ruleName}.md`;
+
+const patchedRuleCreator: typeof ESLintUtils.RuleCreator = (ruleCreator) => {
+  return (ruleConfig) => {
+    const rule = ruleCreator(ruleConfig);
+    const ruleName = rule.meta.ruleId;
+
     return {
-      meta: Object.assign(Object.assign({}, meta), {
-        docs: Object.assign(Object.assign({}, meta.docs), {
-          url: urlCreator(name),
-        }),
-      }),
-      defaultOptions,
+      ...rule,
+      meta: {
+        ...rule.meta,
+        docs: {
+          ...rule.meta.docs,
+          url: urlCreator(ruleName),
+        },
+      },
       create(context) {
         const optionsWithDefault = applyDefault(
-          defaultOptions,
+          ruleConfig.defaultOptions,
           context.options,
         );
-        return create(context, optionsWithDefault);
+        return rule.create(context, optionsWithDefault);
       },
     };
   };
 };
 
-export const createESLintRule = patchedRuleCreator(
-  (ruleName) =>
-    `https://github.com/angular-eslint/angular-eslint/blob/master/packages/eslint-plugin-template/docs/rules/${ruleName}.md`,
-);
+export const createESLintRule = patchedRuleCreator(ESLintUtils.RuleCreator);
+
+// Add a test suite to ensure the rule works as expected
+const ruleTester = new RuleTester({
+  parserOptions: {
+    ecmaVersion: 2018,
+    sourceType: 'module',
+  },
+});
+
+ruleTester.run('exampleRule', rule, {
+  valid: [
+    {
+      code: `const x = 1;`,
+    },
+  ],
+  invalid: [
+    {
+      code: `const x = '1';`,
+      errors: [
+        {
+          message: 'Expected 1 to be a number.',
+        },
+      ],
+    },
+  ],
+});
+
+interface Rule {
+  meta: {
+    docs: {
+      url: string;
+    };
+  };
+  create(context: Readonly<import('eslint').Rule.RuleContext>, options
