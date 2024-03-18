@@ -9,9 +9,10 @@ import type { TSESTree } from '@typescript-eslint/experimental-utils';
 import { createESLintRule } from '../utils/create-eslint-rule';
 
 type Options = [];
-export type MessageIds =
+type MessageIds =
   | 'noEmptyLifecycleMethod'
   | 'suggestRemoveLifecycleMethod';
+
 export const RULE_NAME = 'no-empty-lifecycle-method';
 
 export default createESLintRule<Options, MessageIds>({
@@ -37,9 +38,7 @@ export default createESLintRule<Options, MessageIds>({
     ]);
 
     return {
-      [`ClassDeclaration:has(Decorator[expression.callee.name=/^(Component|Directive|Injectable|NgModule|Pipe)$/]) > ClassBody > ${Selectors.methodDefinition(
-        angularLifecycleMethodsPattern,
-      )}[value.body.body.length=0]`](
+      [Selectors.methodDefinition(Selectors.isLifecycleMethod(angularLifecycleMethodsPattern))[value.body.body.length=0]](
         node: TSESTree.MethodDefinition & {
           parent: TSESTree.ClassBody & { parent: TSESTree.ClassDeclaration };
         },
@@ -58,10 +57,7 @@ export default createESLintRule<Options, MessageIds>({
                   '',
                 );
                 const text = sourceCode.getText();
-                const totalInterfaceOccurrences = getTotalInterfaceOccurrences(
-                  text,
-                  interfaceName,
-                );
+                const totalInterfaceOccurrences = (text.match(new RegExp(interfaceName, 'g')) || []).length;
                 const totalInterfaceOccurrencesSafeForRemoval = 2;
 
                 return [
@@ -95,8 +91,37 @@ function stripSpecialCharacters(text: string) {
   return text.replace(/[\W]/g, '');
 }
 
-function getTotalInterfaceOccurrences(text: string, interfaceName: string) {
-  return text
-    .split(' ')
-    .filter((item) => stripSpecialCharacters(item) === interfaceName).length;
+
+
+/** @type {import('eslint').Linter.Config} */
+const rule = {
+  // ...
+};
+
+module.exports = rule;
+module.exports.ruleName = RULE_NAME;
+
+
+
+{
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2018,
+    "sourceType": "module"
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "@angular-eslint"
+  ],
+  "extends": [
+    "plugin:@angular-eslint/recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "prettier/@typescript-eslint",
+    "plugin:prettier/recommended"
+  ],
+  "rules": {
+    // ...
+  }
 }
+
