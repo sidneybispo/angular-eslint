@@ -3,8 +3,8 @@ import type { TSESTree } from '@typescript-eslint/experimental-utils';
 import { createESLintRule } from '../utils/create-eslint-rule';
 
 type Options = [];
-export type MessageIds = 'noPipeImpure' | 'suggestRemovePipeImpure';
-export const RULE_NAME = 'no-pipe-impure';
+type MessageIds = 'noPipeImpure' | 'suggestRemovePipeImpure';
+const RULE_NAME = 'no-pipe-impure';
 
 export default createESLintRule<Options, MessageIds>({
   name: RULE_NAME,
@@ -19,12 +19,13 @@ export default createESLintRule<Options, MessageIds>({
     messages: {
       noPipeImpure:
         'Impure pipes should be avoided because they are invoked on each change-detection cycle',
-      suggestRemovePipeImpure: 'Remove `pure` property',
+      suggestRemovePipeImpure: 'Remove `pure: false` property',
     },
   },
   defaultOptions: [],
   create(context) {
     const sourceCode = context.getSourceCode();
+    const ruleFixes = new RuleFixes(sourceCode, context.getReport());
 
     return {
       [`${Selectors.PIPE_CLASS_DECORATOR} ${Selectors.metadataProperty(
@@ -38,8 +39,7 @@ export default createESLintRule<Options, MessageIds>({
           suggest: [
             {
               messageId: 'suggestRemovePipeImpure',
-              fix: (fixer) =>
-                RuleFixes.getNodeToCommaRemoveFix(sourceCode, node, fixer),
+              fix: ruleFixes.removeProperty(node),
             },
           ],
         });
