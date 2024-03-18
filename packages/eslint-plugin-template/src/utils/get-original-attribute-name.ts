@@ -1,14 +1,14 @@
-import type {
+import {
   TmplAstBoundAttribute,
+  TmplAstBoundEvent,
   TmplAstTextAttribute,
 } from '@angular-eslint/bundled-angular-compiler';
-import { TmplAstBoundEvent } from '@angular-eslint/bundled-angular-compiler';
 
 /**
  * Returns the original attribute name.
  * @example
  * ```html
- * <div [style.display.none]="test"></div> <!-- Instead of "display", "style.display.none" -->
+ * <div [style.display.none]="test"></div> <!-- Instead of "style.display.none", "display" -->
  * <div [attr.role]="'none'"></div> <!-- Instead of "attr.role", "role" -->
  * <div ([ngModel])="test"></div> <!-- Instead of "ngModel", "ngModelChange" -->
  * <div (@fade.start)="handle()"></div> <!-- Instead of "fade", "@fade.start" -->
@@ -17,22 +17,15 @@ import { TmplAstBoundEvent } from '@angular-eslint/bundled-angular-compiler';
 export function getOriginalAttributeName(
   attribute: TmplAstBoundAttribute | TmplAstBoundEvent | TmplAstTextAttribute,
 ): string {
-  const { details } = attribute.keySpan ?? {};
-
-  if (!details) {
-    return attribute.name;
-  }
-
   if (attribute instanceof TmplAstBoundEvent) {
-    return isTwoWayDataBinding(attribute) ? attribute.name : details;
+    return isTwoWayDataBinding(attribute) ? attribute.name.slice(0, -7) : attribute.name.slice(1);
   }
 
-  return details.replace('attr.', '');
+  const { details } = attribute.keySpan ?? {};
+  return details ?? attribute.name;
 }
 
-function isTwoWayDataBinding({
-  keySpan: { details },
-  name,
-}: TmplAstBoundEvent): boolean {
-  return name === `${details}Change`;
+function isTwoWayDataBinding(attribute: TmplAstBoundEvent): boolean {
+  const { name, keySpan } = attribute;
+  return keySpan && keySpan.details && name.endsWith('Change');
 }
