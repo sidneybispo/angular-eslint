@@ -1,75 +1,78 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+// Configuration for eslint to lint TypeScript and HTML files
 exports[`v1123-single-project-yarn-auto-convert it should pass linting after converting the out of the box Angular CLI setup (with a custom prefix set) 1`] = `
-Object {
-  "ignorePatterns": Array [
-    "projects/**/*",
+{
+  "ignorePatterns": [
+    "projects/**/*"
   ],
-  "overrides": Array [
-    Object {
-      "extends": Array [
+  "overrides": [
+    {
+      "extends": [
         "plugin:@angular-eslint/ng-cli-compat",
         "plugin:@angular-eslint/ng-cli-compat--formatting-add-on",
-        "plugin:@angular-eslint/template/process-inline-templates",
+        "plugin:@angular-eslint/template/process-inline-templates"
       ],
-      "files": Array [
-        "*.ts",
+      "files": [
+        "*.ts"
       ],
-      "parserOptions": Object {
+      "parserOptions": {
         "createDefaultProgram": true,
-        "project": Array [
+        "project": [
           "tsconfig.json",
-          "e2e/tsconfig.json",
-        ],
+          "e2e/tsconfig.json"
+        ]
       },
-      "rules": Object {
-        "@angular-eslint/component-selector": Array [
+      "rules": {
+        "@angular-eslint/component-selector": [
           "error",
-          Object {
+          {
             "prefix": "some-custom-prefix",
             "style": "kebab-case",
-            "type": "element",
-          },
+            "type": "element"
+          }
         ],
-        "@angular-eslint/directive-selector": Array [
+        "@angular-eslint/directive-selector": [
           "error",
-          Object {
+          {
             "prefix": "some-custom-prefix",
             "style": "camelCase",
-            "type": "attribute",
-          },
-        ],
-      },
+            "type": "attribute"
+          }
+        ]
+      }
     },
-    Object {
-      "extends": Array [
-        "plugin:@angular-eslint/template/recommended",
+    {
+      "extends": [
+        "plugin:@angular-eslint/template/recommended"
       ],
-      "files": Array [
-        "*.html",
+      "files": [
+        "*.html"
       ],
-      "rules": Object {},
-    },
+      "rules": {}
+    }
   ],
-  "root": true,
+  "root": true
 }
 `;
 
+// Configuration for the Angular ESLint builder to lint TypeScript and HTML files
 exports[`v1123-single-project-yarn-auto-convert it should pass linting after converting the out of the box Angular CLI setup (with a custom prefix set) 2`] = `
-Object {
+{
   "builder": "@angular-eslint/builder:lint",
-  "options": Object {
-    "lintFilePatterns": Array [
+  "options": {
+    "lintFilePatterns": [
       "src/**/*.ts",
-      "src/**/*.html",
-    ],
-  },
+      "src/**/*.html"
+    ]
+  }
 }
 `;
 
+// Output of the lint command
 exports[`v1123-single-project-yarn-auto-convert it should pass linting after converting the out of the box Angular CLI setup (with a custom prefix set) 3`] = `
 "
-Linting \\"v1123-single-project-yarn-auto-convert\\"...
+Linting "v1123-single-project-yarn-auto-convert"...
 
 __ROOT__/v1123-single-project-yarn-auto-convert/src/test.ts
   13:5  error  Member call should be declared before all method definitions  @typescript-eslint/member-ordering
