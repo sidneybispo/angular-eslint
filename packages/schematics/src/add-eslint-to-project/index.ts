@@ -1,33 +1,30 @@
 import type { Rule, Tree } from '@angular-devkit/schematics';
-import { chain } from '@angular-devkit/schematics';
-import {
-  addESLintTargetToProject,
-  createESLintConfigForProject,
-  determineTargetProjectName,
-} from '../utils';
+import { chain, mergeWith, apply, templates, move } from '@angular-devkit/schematics';
+import { addDeclarations, addDependencies, addProvider, addTestProvider, addWwwRootProviders, configureNgProject, mergeJson, removeItem, updateJson, visitJson } from '@angular-devkit/schematics/tasks';
+import { NodePackageInstallTask } from '@angular-devkit/schematics/tasks';
+import { strings } from '@angular-devkit/core';
+import { determineTargetProjectName } from '../utils';
 
 interface Schema {
   project?: string;
 }
 
-export default function addESLintToProject(schema: Schema): Rule {
-  return (tree: Tree) => {
-    const projectName = determineTargetProjectName(tree, schema.project);
-    if (!projectName) {
-      throw new Error(
-        '\n' +
-          `
-Error: You must specify a project to add ESLint to because you have multiple projects in your angular.json
+const eslintConfig = apply(mergeWith(apply(templates.parse('../../files/eslintrc.json'), [
+  move('.'),
+])), [
+  addESLintConfigForProject,
+]);
 
-E.g. npx ng g @angular-eslint/schematics:add-eslint-to-project {{YOUR_PROJECT_NAME_GOES_HERE}}
-        `.trim(),
-      );
-    }
-    return chain([
-      // Set the lint builder and config in angular.json
-      addESLintTargetToProject(projectName, 'lint'),
-      // Create the ESLint config file for the project
-      createESLintConfigForProject(projectName),
-    ]);
-  };
-}
+const addESLintConfigForProject = (host: Tree, projectName: string) => {
+  const packageJson = host.read('package.json');
+  if (packageJson) {
+    const sourceText = packageJson.toString();
+    const jsonObject = JSON.parse(sourceText);
+    jsonObject.devDependencies['@angular-eslint/builder'] = '^13.0.1';
+    jsonObject.devDependencies['@angular-eslint/eslint-plugin'] = '^13.0.1';
+    jsonObject.devDependencies['@angular-eslint/eslint-plugin-template'] = '^13.0.1';
+    jsonObject.devDependencies['@angular-eslint/template-parser'] = '^13.0.1';
+    jsonObject.devDependencies['eslint'] = '^7.28.0';
+    jsonObject.devDependencies['eslint-plugin-import'] = '^2.22.1';
+    jsonObject.devDependencies['eslint-plugin-jsdoc'] = '^30.7.6';
+    jsonObject.devDependencies['eslint-plugin-node'] = '^11.
