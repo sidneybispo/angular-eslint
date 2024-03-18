@@ -1,10 +1,10 @@
 import { convertAnnotatedSourceToFailureCase } from '@angular-eslint/utils';
 import type { MessageIds } from '../../../src/rules/relative-url-prefix';
 
-const messageId: MessageIds = 'relativeUrlPrefix';
+const relativeUrlPrefix: MessageIds = 'relativeUrlPrefix';
 
-export const valid = [
-  `
+const valid = [
+  [`
     @Component({
       styleUrls: [
         './foo.css',
@@ -16,46 +16,46 @@ export const valid = [
       ]
     })
     class Test {}
-    `,
-  `
+    `,],
+  [`
     @Component({
       templateUrl: './foobar.html'
     })
     class Test {}
-    `,
-  `
+    `,],
+  [`
     @Component({
       templateUrl: '../foobar.html'
     })
     class Test {}
-    `,
-  `
+    `,],
+  [`
     @Component({
       templateUrl: '../../foobar.html'
     })
     class Test {}
-    `,
-  `
+    `,],
+  [`
     @Component({
       templateUrl: '../../../foobar.html'
     })
     class Test {}
-    `,
-  `
+    `,],
+  [`
     @Component({
       templateUrl: './../foobar.html'
     })
     class Test {}
-    `,
-  `
+    `,],
+  [`
     @Component({
       templateUrl: '.././foobar.html'
     })
     class Test {}
-    `,
+    `,],
 ];
 
-export const invalid = [
+const invalid = [
   convertAnnotatedSourceToFailureCase({
     description: 'it should fail if one of "styleUrls" is absolute',
     annotatedSource: `
@@ -65,7 +65,7 @@ export const invalid = [
         })
         class Test {}
       `,
-    messageId,
+    messageId: relativeUrlPrefix,
   }),
   convertAnnotatedSourceToFailureCase({
     description: 'it should fail if "templateUrl" is absolute',
@@ -75,7 +75,4 @@ export const invalid = [
                        ~~~~~~~~~~~~~
         })
         class Test {}
-      `,
-    messageId,
-  }),
-];
+      `
