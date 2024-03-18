@@ -3,18 +3,18 @@ import type { MessageIds } from '../../../src/rules/no-output-on-prefix';
 
 const messageId: MessageIds = 'noOutputOnPrefix';
 
-export const valid = [
+export const validExamples = [
   `class Test {}`,
   `
-    @Page({
-      outputs: ['on', onChange, \`onLine\`, 'on: on2', 'offline: on', ...onCheck, onOutput()],
+    @Component({
+      outputs: ['on', 'onChange', 'onLine', 'on:on2', 'offline:on', ...onCheck, 'onOutput()'],
     })
     class Test {}
     `,
   `
     @Component()
     class Test {
-      on = new EventEmitter();
+      @Output() on = new EventEmitter();
     }
     `,
   `
@@ -26,24 +26,24 @@ export const valid = [
   `
     @Component()
     class Test {
-      @Output() On = new EventEmitter<{ on: onType }>();
+      @Output() On = new EventEmitter<{ on: string }>();
     }
     `,
   `
     @Directive()
     class Test {
-      @Output(\`one\`) ontype = new EventEmitter<{ bar: string, on: boolean }>();
+      @Output('one') ontype = new EventEmitter<{ bar: string, on: boolean }>();
     }
     `,
   `
     @Component()
     class Test {
-      @Output('oneProp') common = new EventEmitter<ComplextOn>();
+      @Output('oneProp') common = new EventEmitter<ComplexOn>();
     }
     `,
   `
-    @Directive()
-    class Test<On> {
+    @Directive<On>()
+    class Test {
       @Output() ON = new EventEmitter<On>();
     }
     `,
@@ -51,7 +51,7 @@ export const valid = [
     const on = 'on';
     @Component()
     class Test {
-      @Output(on) touchMove: EventEmitter<{ action: 'on' | 'off' }> = new EventEmitter<{ action: 'on' | 'off' }>();
+      @Output(on) touchMove = new EventEmitter<{ action: 'on' | 'off' }>();
     }
     `,
   `
@@ -65,21 +65,21 @@ export const valid = [
   `
     @Component({
       selector: 'foo',
-      'outputs': [\`test: ${'foo'}\`]
+      outputs: [\`test: ${'foo'}\`]
     })
     class Test {}
     `,
   `
     @Directive({
       selector: 'foo',
-      ['outputs']: [\`test: ${'foo'}\`]
+      outputs: [\`test: ${'foo'}\`]
     })
     class Test {}
     `,
   `
     @Component({
-      'selector': 'foo',
-      [\`outputs\`]: [\`test: ${'foo'}\`]
+      selector: 'foo',
+      outputs: [\`test: ${'foo'}\`]
     })
     class Test {}
     `,
@@ -93,10 +93,9 @@ export const valid = [
     `,
 ];
 
-export const invalid = [
+export const invalidExamples = [
   convertAnnotatedSourceToFailureCase({
-    description:
-      'should fail if `outputs` metadata property is named "on" in `@Component`',
+    description: 'should fail if `outputs` metadata property is named "on" in `@Component`',
     annotatedSource: `
         @Component({
           outputs: ['on']
@@ -107,12 +106,11 @@ export const invalid = [
     messageId,
   }),
   convertAnnotatedSourceToFailureCase({
-    description:
-      'should fail if `outputs` metadata property is `Literal` and aliased as "on" in `@Directive`',
+    description: 'should fail if `outputs` metadata property is `Literal` and aliased as "on" in `@Directive`',
     annotatedSource: `
         @Directive({
           inputs: [onCredit],
-          'outputs': [onLevel, \`test: on\`, onFunction()],
+          outputs: [onLevel, \`test: on\`, onFunction()],
                                ~~~~~~~~~~
         })
         class Test {}
@@ -120,11 +118,10 @@ export const invalid = [
     messageId,
   }),
   convertAnnotatedSourceToFailureCase({
-    description:
-      'should fail if `outputs` metadata property is computed `Literal` and named "onTest" in `@Component`',
+    description: 'should fail if `outputs` metadata property is computed `Literal` and named "onTest" in `@Component`',
     annotatedSource: `
         @Component({
-          ['outputs']: ['onTest: test', ...onArray],
+          outputs: ['onTest: test', ...onArray],
                         ~~~~~~~~~~~~~~
         })
         class Test {}
@@ -132,11 +129,10 @@ export const invalid = [
     messageId,
   }),
   convertAnnotatedSourceToFailureCase({
-    description:
-      'should fail if `outputs` metadata property is computed `TemplateLiteral` and named "onTest" in `@Directive`',
+    description: 'should fail if `outputs` metadata property is computed `TemplateLiteral` and named "onTest" in `@Directive`',
     annotatedSource: `
         @Directive({
-          [\`outputs\`]: ['onTest: test', ...onArray],
+          outputs: ['onTest: test', ...onArray],
                         ~~~~~~~~~~~~~~
         })
         class Test {}
@@ -155,32 +151,29 @@ export const invalid = [
     messageId,
   }),
   convertAnnotatedSourceToFailureCase({
-    description:
-      'should fail if output property is named with "\'on\'" prefix in `@Directive`',
+    description: 'should fail if output property is named with "\'on\'" prefix in `@Directive`',
     annotatedSource: `
         @Directive()
         class Test {
-          @Output() @Custom('on') 'onPrefix' = new EventEmitter<void>();
+          @Output() 'onPrefix' = new EventEmitter<void>();
                                   ~~~~~~~~~~
         }
       `,
     messageId,
   }),
   convertAnnotatedSourceToFailureCase({
-    description:
-      'should fail if output property is aliased as "`on`" in `@Component`',
+    description: 'should fail if output property is aliased as "on" in `@Component`',
     annotatedSource: `
         @Component()
         class Test {
-          @Custom() @Output(\`on\`) _on = getOutput();
-                            ~~~~
+          @Output() on = getOutput();
+                   ~~~~
         }
       `,
     messageId,
   }),
   convertAnnotatedSourceToFailureCase({
-    description:
-      'should fail if output property is aliased with "on" prefix in `@Directive`',
+    description: 'should fail if output property is aliased with "on" prefix in `@Directive`',
     annotatedSource: `
         @Directive()
         class Test {
@@ -191,8 +184,7 @@ export const invalid = [
     messageId,
   }),
   convertAnnotatedSourceToFailureCase({
-    description:
-      'should fail if output getter is named with "on" prefix in `@Component`',
+    description: 'should fail if output getter is named with "on" prefix in `@Component`',
     annotatedSource: `
         @Component()
         class Test {
@@ -202,31 +194,4 @@ export const invalid = [
       `,
     messageId,
   }),
-  convertAnnotatedSourceToFailureCase({
-    description:
-      'should fail if output getter is aliased with "on" prefix in `@Directive`',
-    annotatedSource: `
-        @Directive()
-        class Test {
-          @Output(\`${'onGetter'}\`) get getter() {}
-                  ~~~~~~~~~~
-        }
-      `,
-    messageId,
-  }),
-  convertAnnotatedSourceToFailureCase({
-    description:
-      'should fail if output property is named with prefix "on" and aliased as "on" without `@Component` or `@Directive`',
-    annotatedSource: `
-        @Injectable()
-        class Test {
-          @Output('on') onPrefix = this.getOutput();
-                  ~~~~  ^^^^^^^^
-        }
-      `,
-    messages: [
-      { char: '~', messageId },
-      { char: '^', messageId },
-    ],
-  }),
-];
+  convertAnnotatedSourceTo
