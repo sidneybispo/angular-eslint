@@ -1,39 +1,39 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`v1123-multi-project-yarn-auto-convert it should pass linting after converting the out of the box Angular CLI setup (with an additional project called "another-app" with a custom prefix set) 1`] = `
+exports['v1123-multi-project-yarn-auto-convert it should pass linting after converting the out of the box Angular CLI setup (with an additional project called "another-app" with a custom prefix set) 1'] = `
 Object {
-  "ignorePatterns": Array [
+  "ignorePatterns": [
     "projects/**/*",
   ],
-  "overrides": Array [
-    Object {
-      "extends": Array [
+  "overrides": [
+    {
+      "extends": [
         "plugin:@angular-eslint/ng-cli-compat",
         "plugin:@angular-eslint/ng-cli-compat--formatting-add-on",
         "plugin:@angular-eslint/template/process-inline-templates",
       ],
-      "files": Array [
+      "files": [
         "*.ts",
       ],
-      "parserOptions": Object {
+      "parserOptions": {
         "createDefaultProgram": true,
-        "project": Array [
+        "project": [
           "tsconfig.json",
           "e2e/tsconfig.json",
         ],
       },
-      "rules": Object {
-        "@angular-eslint/component-selector": Array [
+      "rules": {
+        "@angular-eslint/component-selector": [
           "error",
-          Object {
+          {
             "prefix": "app",
             "style": "kebab-case",
             "type": "element",
           },
         ],
-        "@angular-eslint/directive-selector": Array [
+        "@angular-eslint/directive-selector": [
           "error",
-          Object {
+          {
             "prefix": "app",
             "style": "camelCase",
             "type": "attribute",
@@ -41,25 +41,25 @@ Object {
         ],
       },
     },
-    Object {
-      "extends": Array [
+    {
+      "extends": [
         "plugin:@angular-eslint/template/recommended",
       ],
-      "files": Array [
+      "files": [
         "*.html",
       ],
-      "rules": Object {},
+      "rules": {},
     },
   ],
   "root": true,
 }
 `;
 
-exports[`v1123-multi-project-yarn-auto-convert it should pass linting after converting the out of the box Angular CLI setup (with an additional project called "another-app" with a custom prefix set) 2`] = `
+exports['v1123-multi-project-yarn-auto-convert it should pass linting after converting the out of the box Angular CLI setup (with an additional project called "another-app" with a custom prefix set) 2'] = `
 Object {
   "builder": "@angular-eslint/builder:lint",
-  "options": Object {
-    "lintFilePatterns": Array [
+  "options": {
+    "lintFilePatterns": [
       "src/**/*.ts",
       "src/**/*.html",
     ],
@@ -67,37 +67,37 @@ Object {
 }
 `;
 
-exports[`v1123-multi-project-yarn-auto-convert it should pass linting after converting the out of the box Angular CLI setup (with an additional project called "another-app" with a custom prefix set) 3`] = `
+exports['v1123-multi-project-yarn-auto-convert it should pass linting after converting the out of the box Angular CLI setup (with an additional project called "another-app" with a custom prefix set) 3'] = `
 Object {
   "extends": "../../.eslintrc.json",
-  "ignorePatterns": Array [
+  "ignorePatterns": [
     "!**/*",
   ],
-  "overrides": Array [
-    Object {
-      "files": Array [
+  "overrides": [
+    {
+      "files": [
         "*.ts",
       ],
-      "parserOptions": Object {
+      "parserOptions": {
         "createDefaultProgram": true,
-        "project": Array [
+        "project": [
           "projects/another-app/tsconfig.app.json",
           "projects/another-app/tsconfig.spec.json",
           "projects/another-app/e2e/tsconfig.json",
         ],
       },
-      "rules": Object {
-        "@angular-eslint/component-selector": Array [
+      "rules": {
+        "@angular-eslint/component-selector": [
           "error",
-          Object {
+          {
             "prefix": "customprefix",
             "style": "kebab-case",
             "type": "element",
           },
         ],
-        "@angular-eslint/directive-selector": Array [
+        "@angular-eslint/directive-selector": [
           "error",
-          Object {
+          {
             "prefix": "customprefix",
             "style": "camelCase",
             "type": "attribute",
@@ -105,21 +105,21 @@ Object {
         ],
       },
     },
-    Object {
-      "files": Array [
+    {
+      "files": [
         "*.html",
       ],
-      "rules": Object {},
+      "rules": {},
     },
   ],
 }
 `;
 
-exports[`v1123-multi-project-yarn-auto-convert it should pass linting after converting the out of the box Angular CLI setup (with an additional project called "another-app" with a custom prefix set) 4`] = `
+exports['v1123-multi-project-yarn-auto-convert it should pass linting after converting the out of the box Angular CLI setup (with an additional project called "another-app" with a custom prefix set) 4'] = `
 Object {
   "builder": "@angular-eslint/builder:lint",
-  "options": Object {
-    "lintFilePatterns": Array [
+  "options": {
+    "lintFilePatterns": [
       "projects/another-app/**/*.ts",
       "projects/another-app/**/*.html",
     ],
@@ -127,36 +127,36 @@ Object {
 }
 `;
 
-exports[`v1123-multi-project-yarn-auto-convert it should pass linting after converting the out of the box Angular CLI setup (with an additional project called "another-app" with a custom prefix set) 5`] = `
+exports['v1123-multi-project-yarn-auto-convert it should pass linting after converting the out of the box Angular CLI setup (with an additional project called "another-app" with a custom prefix set) 5'] = `
 Object {
   "extends": "../../.eslintrc.json",
-  "ignorePatterns": Array [
+  "ignorePatterns": [
     "!**/*",
   ],
-  "overrides": Array [
-    Object {
-      "files": Array [
+  "overrides": [
+    {
+      "files": [
         "*.ts",
       ],
-      "parserOptions": Object {
+      "parserOptions": {
         "createDefaultProgram": true,
-        "project": Array [
+        "project": [
           "projects/another-lib/tsconfig.lib.json",
           "projects/another-lib/tsconfig.spec.json",
         ],
       },
-      "rules": Object {
-        "@angular-eslint/component-selector": Array [
+      "rules": {
+        "@angular-eslint/component-selector": [
           "error",
-          Object {
+          {
             "prefix": "lib",
             "style": "kebab-case",
             "type": "element",
           },
         ],
-        "@angular-eslint/directive-selector": Array [
+        "@angular-eslint/directive-selector": [
           "error",
-          Object {
+          {
             "prefix": "lib",
             "style": "camelCase",
             "type": "attribute",
@@ -164,51 +164,18 @@ Object {
         ],
       },
     },
-    Object {
-      "files": Array [
+    {
+      "files": [
         "*.html",
       ],
-      "rules": Object {},
+      "rules": {},
     },
   ],
 }
 `;
 
-exports[`v1123-multi-project-yarn-auto-convert it should pass linting after converting the out of the box Angular CLI setup (with an additional project called "another-app" with a custom prefix set) 6`] = `
+exports['v1123-multi-project-yarn-auto-convert it should pass linting after converting the out of the box Angular CLI setup (with an additional project called "another-app" with a custom prefix set) 6'] = `
 Object {
   "builder": "@angular-eslint/builder:lint",
-  "options": Object {
-    "lintFilePatterns": Array [
-      "projects/another-lib/**/*.ts",
-      "projects/another-lib/**/*.html",
-    ],
-  },
-}
-`;
-
-exports[`v1123-multi-project-yarn-auto-convert it should pass linting after converting the out of the box Angular CLI setup (with an additional project called "another-app" with a custom prefix set) 7`] = `
-"
-Linting \\"v1123-multi-project-yarn-auto-convert\\"...
-
-__ROOT__/v1123-multi-project-yarn-auto-convert/src/test.ts
-  13:5  error  Member call should be declared before all method definitions  @typescript-eslint/member-ordering
-
-✖ 1 problem (1 error, 0 warnings)
-
-
-Linting \\"another-app\\"...
-
-__ROOT__/v1123-multi-project-yarn-auto-convert/projects/another-app/src/test.ts
-  13:5  error  Member call should be declared before all method definitions  @typescript-eslint/member-ordering
-
-✖ 1 problem (1 error, 0 warnings)
-
-
-Linting \\"another-lib\\"...
-
-__ROOT__/v1123-multi-project-yarn-auto-convert/projects/another-lib/src/test.ts
-  14:5  error  Member call should be declared before all method definitions  @typescript-eslint/member-ordering
-
-✖ 1 problem (1 error, 0 warnings)
-"
-`;
+  "options": {
+   
