@@ -4,19 +4,14 @@ import { NodePackageInstallTask } from '@angular-devkit/schematics/tasks';
 import { updateJsonInTree } from '../../utils';
 
 export function updateDependencies(
-  depsToUpdate: { packageName: string; version: string }[],
+  depsToUpdate: { packageName: string; version: string; type?: 'dependencies' | 'devDependencies' }[],
 ): Rule {
-  return chain([
-    updateJsonInTree('package.json', (json) => {
-      for (const { packageName, version } of depsToUpdate) {
-        updateIfExists(json, packageName, version);
-      }
+  return chain(depsToUpdate.map((dep) => {
+    return updateJsonInTree(`package.json`, (json) => {
+      updateIfExists(json, dep.packageName, dep.version, dep.type);
       return json;
-    }),
-    (_: Tree, context: SchematicContext) => {
-      context.addTask(new NodePackageInstallTask());
-    },
-  ]);
+    });
+  })).pipe(addPackageInstallTask());
 }
 
 function updateIfExists(
@@ -28,14 +23,18 @@ function updateIfExists(
     | undefined,
   depName: string,
   updatedVersion: string,
+  type?: 'dependencies' | 'devDependencies',
 ) {
-  if (!packageJson) {
+  if (!packageJson || !type) {
     return;
   }
-  if (packageJson.dependencies && packageJson.dependencies[depName]) {
-    packageJson.dependencies[depName] = updatedVersion;
+  if (packageJson[type] && packageJson[type][depName]) {
+    packageJson[type][depName] = updatedVersion;
   }
-  if (packageJson.devDependencies && packageJson.devDependencies[depName]) {
-    packageJson.devDependencies[depName] = updatedVersion;
-  }
+}
+
+function addPackageInstallTask(): (tree: Tree, context: SchematicContext) => void {
+  return (_: Tree, context: SchematicContext) => {
+    context.addTask(new NodePackageInstallTask());
+  };
 }
