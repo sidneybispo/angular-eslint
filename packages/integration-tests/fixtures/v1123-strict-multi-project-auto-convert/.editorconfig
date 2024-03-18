@@ -1,16 +1,27 @@
-# Editor configuration, see https://editorconfig.org
+# Editor Configuration
+
+# Set the root property to true so that these rules are applied to all files
 root = true
 
+# Set the charset to UTF-8 for all files
 [*]
 charset = utf-8
+
+# Set the indent style to space and indent size to 2 for all files
 indent_style = space
 indent_size = 2
+
+# Insert a final newline at the end of files
 insert_final_newline = true
+
+# Trim trailing whitespace in files
 trim_trailing_whitespace = true
 
+# TypeScript files should use single quotes
 [*.ts]
 quote_type = single
 
+# Markdown files should have no max line length and not trim trailing whitespace
 [*.md]
 max_line_length = off
 trim_trailing_whitespace = false
