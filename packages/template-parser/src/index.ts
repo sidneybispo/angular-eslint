@@ -13,7 +13,6 @@ import {
 type NodeOrTokenType = any;
 
 interface Node {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
   type: NodeOrTokenType;
 }
@@ -30,7 +29,6 @@ interface Token extends TSESTree.BaseNode {
 interface AST extends Node, Token {
   comments: Token[];
   tokens: Token[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   templateNodes: any[];
 }
 
@@ -50,74 +48,74 @@ const KEYS: VisitorKeys = {
   BindingPipe: ['exp'],
 };
 
-function fallbackKeysFilter(this: Node, key: string) {
-  let value = null;
+function isNode(node: unknown): node is Node {
+  if (!node) return false;
   return (
-    key !== 'comments' &&
-    key !== 'leadingComments' &&
-    key !== 'loc' &&
-    key !== 'parent' &&
-    key !== 'range' &&
-    key !== 'tokens' &&
-    key !== 'trailingComments' &&
-    (value = this[key]) !== null &&
-    typeof value === 'object' &&
-    (typeof value.type === 'string' || Array.isArray(value))
+    typeof node === 'object' &&
+    typeof (node as { type?: unknown }).type === 'string'
   );
+}
+
+function isArrayOfNodes(nodes: unknown): nodes is Node[] {
+  if (!Array.isArray(nodes)) return false;
+  return nodes.every(isNode);
+}
+
+function isToken(token: unknown): token is Token {
+  if (!token) return false;
+  return (
+    typeof token === 'object' &&
+    typeof token.type === 'string' &&
+    typeof token.value === 'string'
+  );
+}
+
+function fallbackKeysFilter(this: Node, key: string): boolean {
+  if (
+    key === 'comments' ||
+    key === 'leadingComments' ||
+    key === 'loc' ||
+    key === 'parent' ||
+    key === 'range' ||
+    key === 'trailingComments' ||
+    key === '__originalType'
+  ) {
+    return false;
+  }
+  const value = this[key];
+  if (value === null || typeof value !== 'object') {
+    return false;
+  }
+  if (Array.isArray(value)) {
+    return value.every((v) => typeof v.type === 'string');
+  }
+  return typeof value.type === 'string';
 }
 
 function getFallbackKeys(node: Node): string[] {
   return Object.keys(node).filter(fallbackKeysFilter, node);
 }
 
-function isNode(node: unknown): node is Node {
-  return (
-    node !== null &&
-    typeof node === 'object' &&
-    typeof (node as { type?: unknown }).type === 'string'
-  );
-}
-
-/**
- * ESLint requires all Nodes to have `type` and `loc` properties before it can
- * work with the custom AST.
- */
 function preprocessNode(node: Node) {
-  let i = 0;
-  let j = 0;
-
   const keys = KEYS[node.type] || getFallbackKeys(node);
 
   if (!node.loc && node.sourceSpan) {
     node.loc = convertNodeSourceSpanToLoc(node.sourceSpan);
   }
 
-  for (i = 0; i < keys.length; ++i) {
-    const child = node[keys[i]];
-    const isArr = Array.isArray(child);
-    if (child.type !== undefined) {
-      // Angular sometimes uses a prop called type already
-      child.__originalType = child.type;
+  for (const key of keys) {
+    const child = node[key];
+    if (child === undefined) continue;
+    if (child.__originalType) {
+      child.type = child.__originalType;
+      delete child.__originalType;
     }
-    if (!isArr && !child.type) {
-      child.type = child.constructor.name;
-    }
-
-    if (isArr) {
-      for (j = 0; j < child.length; ++j) {
-        const c = child[j];
-        if (c.type !== undefined) {
-          // Angular sometimes uses a prop called type already
-          c.__originalType = c.type;
-        }
-        // Pay attention to the condition `typeof c.type === number`,
-        // Angular compiler sets `type` property for some AST nodes,
-        // e.g. for the `BoundAttribute`, which is a `BindingType`.
-        if (!c.type || typeof c.type === 'number') {
-          c.type = c.constructor.name;
-        }
-        if (isNode(c)) {
-          preprocessNode(c);
+    if (Array.isArray(child)) {
+      if (isArrayOfNodes(child)) {
+        for (const c of child) {
+          if (isNode(c)) {
+            preprocessNode(c);
+          }
         }
       }
     } else if (isNode(child)) {
@@ -168,8 +166,8 @@ function getEndSourceSpanFromAST(ast: AST): ParseSourceSpan | null {
   return endSourceSpan;
 }
 
-function convertNgAstCommentsToTokens(comments: Comment[]) {
-  const commentTokens = comments.map((comment) => {
+function convertNgAstCommentsToTokens(comments: Comment[]): Token[] {
+  return comments.map((comment) => {
     return {
       // In an HTML context, effectively all our comments are Block comments
       type: 'Block',
@@ -178,81 +176,6 @@ function convertNgAstCommentsToTokens(comments: Comment[]) {
       range: [comment.sourceSpan.start.offset, comment.sourceSpan.end.offset],
     } as Token;
   });
-  /**
-   * ESLint requires this to be sorted by Token#range[0]
-   * https://eslint.org/docs/developer-guide/working-with-custom-parsers
-   */
-  return commentTokens.sort((a, b) => a.range[0] - b.range[0]);
 }
 
-function parseForESLint(
-  code: string,
-  options: { filePath: string },
-): {
-  ast: AST;
-  scopeManager: ScopeManager;
-  visitorKeys: VisitorKeys;
-  services: {
-    convertElementSourceSpanToLoc: typeof convertElementSourceSpanToLoc;
-    convertNodeSourceSpanToLoc: typeof convertNodeSourceSpanToLoc;
-  };
-} {
-  const angularCompilerResult = parseTemplate(code, options.filePath, {
-    preserveWhitespaces: true,
-    preserveLineEndings: true,
-    collectCommentNodes: true,
-  });
-
-  let ngAstCommentNodes: Comment[] = [];
-  if (Array.isArray(angularCompilerResult.commentNodes)) {
-    ngAstCommentNodes = angularCompilerResult.commentNodes;
-  }
-
-  const ast: AST = {
-    type: 'Program',
-    comments: convertNgAstCommentsToTokens(ngAstCommentNodes),
-    tokens: [],
-    range: [0, 0],
-    loc: {
-      start: { line: 0, column: 0 },
-      end: { line: 0, column: 0 },
-    },
-    templateNodes: angularCompilerResult.nodes,
-    value: code,
-  };
-
-  // @ts-expect-error The types for ScopeManager seem to be wrong, it requires a configuration object or it will throw at runtime
-  const scopeManager = new ScopeManager({});
-
-  // @ts-expect-error Create a global scope for the ScopeManager, the types for Scope also seem to be wrong
-  new Scope(scopeManager, 'module', null, ast, false);
-
-  preprocessNode(ast);
-
-  const startSourceSpan = getStartSourceSpanFromAST(ast);
-  const endSourceSpan = getEndSourceSpanFromAST(ast);
-
-  if (startSourceSpan && endSourceSpan) {
-    ast.range = [startSourceSpan.start.offset, endSourceSpan.end.offset];
-    ast.loc = {
-      start: convertNodeSourceSpanToLoc(startSourceSpan).start,
-      end: convertNodeSourceSpanToLoc(endSourceSpan).end,
-    };
-  }
-
-  return {
-    ast,
-    scopeManager,
-    visitorKeys: KEYS,
-    services: {
-      convertNodeSourceSpanToLoc,
-      convertElementSourceSpanToLoc,
-    },
-  };
-}
-
-export { parseForESLint };
-
-export function parse(code: string, options: { filePath: string }): AST {
-  return parseForESLint(code, options).ast;
-}
+interface ParseForESLintReturnType {
