@@ -3,7 +3,7 @@ import type { MessageIds } from '../../../src/rules/accessibility-alt-text';
 
 const messageId: MessageIds = 'accessibilityAltText';
 
-export const valid = [
+export const validImages = [
   '<img src="foo" alt="Foo eating a sandwich.">',
   '<img src="foo" [attr.alt]="altText">',
   `<img src="foo" [attr.alt]="'Alt Text'">`,
@@ -15,16 +15,12 @@ export const valid = [
   '<area aria-label="foo"></area>',
   '<area aria-labelledby="id1"></area>',
   '<area alt="This is descriptive!"></area>',
-  '<input type="text">',
-  '<input type="image" alt="This is descriptive!">',
-  '<input type="image" aria-label="foo">',
-  '<input type="image" aria-labelledby="id1">',
 ];
 
-export const invalid = [
+export const invalidImages = [
   convertAnnotatedSourceToFailureCase({
     messageId,
-    description: 'should fail image does not have alt text',
+    description: 'should fail when image does not have alt text',
     annotatedSource: `
         <ng-template>
           <div>
@@ -35,6 +31,44 @@ export const invalid = [
       `,
     data: { element: 'img' },
   }),
+];
+
+export const validInputs = [
+  '<input type="text">',
+  '<input type="image" alt="This is descriptive!">',
+  '<input type="image" aria-label="foo">',
+  '<input type="image" aria-labelledby="id1">',
+];
+
+export const invalidInputs = [
+  convertAnnotatedSourceToFailureCase({
+    messageId,
+    description: 'should fail when input element with type image attribute does not have alt or text image',
+    annotatedSource: `
+        <input type="image">
+        ~~~~~~~~~~~~~~~~~~~~
+      `,
+    data: { element: 'input' },
+  }),
+  convertAnnotatedSourceToFailureCase({
+    messageId,
+    description: 'should fail when input element with type image binding does not have alt or text image',
+    annotatedSource: `
+        <input [type]="'image'">
+        ~~~~~~~~~~~~~~~~~~~~~~~~
+      `,
+    data: { element: 'input' },
+  }),
+];
+
+export const validObjects = [
+  '<object aria-label="foo">',
+  '<object aria-labelledby="id1">',
+  '<object>Meaningful description</object>',
+  '<object title="An object">',
+];
+
+export const invalidObjects = [
   convertAnnotatedSourceToFailureCase({
     messageId,
     description: 'should fail when object does not have alt text or labels',
@@ -44,6 +78,15 @@ export const invalid = [
       `,
     data: { element: 'object' },
   }),
+];
+
+export const validAreas = [
+  '<area aria-label="foo"></area>',
+  '<area aria-labelledby="id1"></area>',
+  '<area alt="This is descriptive!"></area>',
+];
+
+export const invalidAreas = [
   convertAnnotatedSourceToFailureCase({
     messageId,
     description: 'should fail when area does not have alt or label text',
@@ -52,25 +95,5 @@ export const invalid = [
         ~~~~~~~~
       `,
     data: { element: 'area' },
-  }),
-  convertAnnotatedSourceToFailureCase({
-    messageId,
-    description:
-      'should fail when input element with type image attribute does not have alt or text image',
-    annotatedSource: `
-        <input type="image">
-        ~~~~~~~~~~~~~~~~~~~~
-      `,
-    data: { element: 'input' },
-  }),
-  convertAnnotatedSourceToFailureCase({
-    messageId,
-    description:
-      'should fail when input element with type image binding does not have alt or text image',
-    annotatedSource: `
-        <input [type]="'image'">
-        ~~~~~~~~~~~~~~~~~~~~~~~~
-      `,
-    data: { element: 'input' },
   }),
 ];
