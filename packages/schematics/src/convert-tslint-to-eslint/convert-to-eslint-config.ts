@@ -1,13 +1,17 @@
 import { normalize } from '@angular-devkit/core';
-import type { Rule, SchematicContext, Tree } from '@angular-devkit/schematics';
+import { Rule, SchematicContext, Tree } from '@angular-devkit/schematics';
 import { execSync } from 'child_process';
-import type { Linter as ESLintLinter } from 'eslint';
+import {
+  Linter as ESLintLinter,
+  RuleTester,
+  ConfigData,
+  ESLint,
+} from 'eslint';
 import { dirSync } from 'tmp';
-import type * as TslintToEslintConfig from 'tslint-to-eslint-config';
+import * as TslintToEslintConfig from 'tslint-to-eslint-config';
 import { readJsonInTree, visitNotIgnoredFiles } from '../utils';
 
 const tslintToEslintConfigVersion =
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   require('../../package.json').devDependencies['tslint-to-eslint-config'];
 
 type TslintToEslintConfigLibrary = {
@@ -18,9 +22,10 @@ type TslintToEslintConfigLibrary = {
 };
 
 let tslintToEslintConfigLibrary: TslintToEslintConfigLibrary;
-function getTslintToEslintConfigLibrary(
+
+async function getTslintToEslintConfigLibrary(
   context: SchematicContext,
-): TslintToEslintConfigLibrary {
+): Promise<TslintToEslintConfigLibrary> {
   if (tslintToEslintConfigLibrary) {
     return tslintToEslintConfigLibrary;
   }
@@ -69,7 +74,7 @@ export function createConvertToESLintConfig(context: SchematicContext) {
       findReportedConfiguration,
       createESLintConfiguration,
       joinConfigConversionResults,
-    } = getTslintToEslintConfigLibrary(context);
+    } = await getTslintToEslintConfigLibrary(context);
 
     const reportedConfiguration = await findReportedConfiguration(
       'npx tslint --print-config',
@@ -129,56 +134,4 @@ export function createConvertToESLintConfig(context: SchematicContext) {
     const convertedESLintConfig = joinConfigConversionResults(
       summarizedConfiguration,
       originalConfigurations,
-    ) as ESLintLinter.Config;
-
-    return {
-      convertedESLintConfig,
-      unconvertedTSLintRules: summarizedConfiguration.missing,
-      ensureESLintPlugins: Array.from(summarizedConfiguration.plugins).filter(
-        (pluginName) => !expectedESLintPlugins.includes(pluginName),
-      ),
-    };
-  };
-}
-
-function likelyContainsTSLintComment(fileContent: string): boolean {
-  return fileContent.includes('tslint:');
-}
-
-export function convertTSLintDisableCommentsForProject(
-  projectName: string,
-): Rule {
-  return (tree: Tree, context: SchematicContext) => {
-    /**
-     * We need to avoid a direct dependency on tslint-to-eslint-config
-     * and ensure we are only resolving the dependency from the user's
-     * node_modules on demand (it will be installed as part of the
-     * conversion schematic).
-     */
-    const { convertFileComments } = getTslintToEslintConfigLibrary(context);
-    const workspaceJson = readJsonInTree(tree, 'angular.json');
-    const existingProjectConfig = workspaceJson.projects[projectName];
-
-    let pathRoot = '';
-
-    // Default Angular CLI project at the root of the workspace
-    if (existingProjectConfig.root === '') {
-      pathRoot = 'src';
-    } else {
-      pathRoot = existingProjectConfig.root;
-    }
-
-    return visitNotIgnoredFiles((filePath, host) => {
-      if (!filePath.endsWith('.ts')) {
-        return;
-      }
-      const fileContent = (host.read(filePath) as Buffer).toString('utf-8');
-      // Avoid updating files if we don't have to
-      if (!likelyContainsTSLintComment(fileContent)) {
-        return;
-      }
-      const updatedFileContent = convertFileComments({ fileContent, filePath });
-      host.overwrite(filePath, updatedFileContent);
-    }, normalize(pathRoot));
-  };
-}
+    ) as ESL
