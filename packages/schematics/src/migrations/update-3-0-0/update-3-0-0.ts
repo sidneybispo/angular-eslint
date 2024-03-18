@@ -1,5 +1,5 @@
 import type { Rule, SchematicContext, Tree } from '@angular-devkit/schematics';
-import { chain } from '@angular-devkit/schematics';
+import { chain, mergeWith, apply, templatesApply, url } from '@angular-devkit/schematics';
 import { NodePackageInstallTask } from '@angular-devkit/schematics/tasks';
 import type { Linter } from 'eslint';
 import { updateJsonInTree, visitNotIgnoredFiles } from '../../utils';
@@ -18,9 +18,6 @@ function updateIfExists(
 
 function updateRelevantDependencies(host: Tree, context: SchematicContext) {
   return updateJsonInTree('package.json', (json) => {
-    /**
-     * @angular-eslint
-     */
     updateIfExists(
       json.devDependencies,
       '@angular-eslint/builder',
@@ -81,16 +78,29 @@ function addRecommendedExtraExtendsWhereApplicable(config: Linter.Config) {
 }
 
 function applyRecommendedExtraExtends() {
+  const templateSource = apply(url('./files/recommended-extra-extends'), [
+    templatesApply(),
+  ]);
+
   return chain([
     visitNotIgnoredFiles((filePath) => {
       if (!filePath.endsWith('.eslintrc.json')) {
         return;
       }
-      return updateJsonInTree(filePath.toString(), (json) => {
-        addRecommendedExtraExtendsWhereApplicable(json);
-        return json;
-      });
+      return mergeWith(templateSource);
     }),
+    (tree) => {
+      tree.children['.eslintrc.json'] = Buffer.from(
+        JSON.stringify(
+          {
+            extends: ['plugin:@angular-eslint/recommended'],
+          },
+          null,
+          2,
+        ),
+      );
+      return tree;
+    },
   ]);
 }
 
@@ -122,15 +132,16 @@ function updateComponentMaxInlineDeclarationsSchema({
 }
 
 function updateComponentMaxInlineDeclarations() {
+  const templateSource = apply(url('./files/component-max-inline-declarations'), [
+    templatesApply(),
+  ]);
+
   return chain([
     visitNotIgnoredFiles((filePath) => {
       if (!filePath.endsWith('.eslintrc.json')) {
         return;
       }
-      return updateJsonInTree(filePath.toString(), (json) => {
-        updateComponentMaxInlineDeclarationsSchema(json);
-        return json;
-      });
+      return mergeWith(templateSource);
     }),
   ]);
 }
