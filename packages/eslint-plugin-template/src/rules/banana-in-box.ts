@@ -5,9 +5,9 @@ import {
 } from '../utils/create-eslint-rule';
 
 type Options = [];
-export type MessageIds = 'bananaInBox';
-export const RULE_NAME = 'banana-in-box';
-const INVALID_PATTERN = /\[(.*)\]/;
+type MessageIds = 'bananaInBox';
+const RULE_NAME = 'banana-in-box';
+const INVALID_PATTERN = /\[(.*?)\]/;
 const VALID_CLOSE_BOX = ')]';
 const VALID_OPEN_BOX = '[(';
 
@@ -31,12 +31,12 @@ export default createESLintRule<Options, MessageIds>({
     const sourceCode = context.getSourceCode();
 
     return {
-      BoundEvent({ name, sourceSpan }: BoundEventAst) {
-        const matches = name.match(INVALID_PATTERN);
+      BoundEvent(node: BoundEventAst) {
+        const matches = node.name.match(INVALID_PATTERN);
 
         if (!matches) return;
 
-        const loc = parserServices.convertNodeSourceSpanToLoc(sourceSpan);
+        const loc = parserServices.convertNodeSourceSpanToLoc(node.sourceSpan);
 
         context.report({
           messageId: 'bananaInBox',
@@ -46,7 +46,7 @@ export default createESLintRule<Options, MessageIds>({
             const textToReplace = `${VALID_OPEN_BOX}${textInTheBox}${VALID_CLOSE_BOX}`;
             const startIndex = sourceCode.getIndexFromLoc(loc.start);
             return fixer.replaceTextRange(
-              [startIndex, startIndex + name.length + 2],
+              [startIndex, startIndex + node.name.length + 2],
               textToReplace,
             );
           },
