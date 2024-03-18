@@ -9,7 +9,7 @@ import { SPECIAL_UNDERLINE_CHARS } from '../../packages/utils/src/convert-annota
 
 const plugin = process.argv[2];
 
-if (plugin !== 'eslint-plugin-template' && plugin !== 'eslint-plugin') {
+if (!['eslint-plugin-template', 'eslint-plugin'].includes(plugin)) {
   console.error(
     `\nError: the first argument to the script must be "eslint-plugin-template" or "eslint-plugin"`,
   );
@@ -17,14 +17,12 @@ if (plugin !== 'eslint-plugin-template' && plugin !== 'eslint-plugin') {
 }
 
 const docsOutputDir = join(__dirname, `../../packages/${plugin}/docs/rules`);
-
 const rulesDir = join(__dirname, `../../packages/${plugin}/src/rules`);
 const ruleFiles = readdirSync(rulesDir);
-
 const testDirsDir = join(__dirname, `../../packages/${plugin}/tests/rules`);
 const testDirs = readdirSync(testDirsDir);
 
-(async function main() {
+async function main() {
   const allRuleData = await generateAllRuleData();
 
   for (const [ruleName, ruleData] of Object.entries(allRuleData)) {
@@ -42,12 +40,6 @@ const testDirs = readdirSync(testDirsDir);
 
     let schemaAsInterface = '';
     if (Array.isArray(schema) && schema[0]) {
-      /**
-       * json-schema-to-typescript does not do anything with the "default" property,
-       * but it's really useful to include in the documentation, so we we apply the
-       * default value in a consistent way to the "description" property before
-       * converting.
-       */
       traverse(schema[0], {
         allKeys: true,
         cb: (...data) => {
@@ -78,7 +70,7 @@ const testDirs = readdirSync(testDirsDir);
           }
         },
       });
-      // @ts-expect-error ...
+
       schemaAsInterface = await compile(schema[0], 'Options', {
         bannerComment: '',
       });
@@ -121,7 +113,11 @@ ${
 }${description}
 
 - Type: ${type}
-${fixable === 'code' ? '- 🔧 Supports autofix (`--fix`)\n' : ''}
+${
+  fixable === 'code'
+    ? '- 🔧 Supports autofix (`--fix`)\n'
+    : ''
+}
 ${
   hasSuggestions
     ? '- 💡 Provides suggestions on how to fix issues (https://eslint.org/docs/developer-guide/working-with-rules#providing-suggestions)'
@@ -173,451 +169,4 @@ ${convertCodeExamplesToMarkdown(
 <details>
 <summary>✅ - Toggle examples of <strong>correct</strong> code for this rule</summary>
 
-${convertCodeExamplesToMarkdown(
-  ruleData.valid,
-  'valid',
-  plugin === 'eslint-plugin-template' ? 'html' : 'ts',
-  fullRuleName,
-)}
-
-</details>
-
-<br>
-`;
-
-    const outputFilePath = join(docsOutputDir, `${ruleName}.md`);
-    writeFileSync(
-      outputFilePath,
-      format(md, {
-        /**
-         * NOTE: In the .prettierrc we set:
-         * "embeddedLanguageFormatting": "off"
-         *
-         * ...for these docs files as it's important we don't let prettier format the
-         * code samples, because otherwise it will move the ~~~ (error highlights) to
-         * the wrong locations.
-         */
-        ...(await resolveConfig(outputFilePath)),
-        parser: 'markdown',
-      }),
-    );
-  }
-
-  console.log(`\n✨ Updated docs for all rules in "${plugin}"`);
-})();
-
-interface RuleData {
-  ruleFilePath: string;
-  testCasesFilePath: string;
-  ruleConfig: TSESLint.RuleModule<string, []> & {
-    defaultOptions?: Record<string, unknown>[];
-  };
-  valid: ExtractedTestCase[];
-  invalid: ExtractedTestCase[];
-}
-
-type AllRuleData = {
-  [ruleName: string]: RuleData;
-};
-
-interface ExtractedTestCase {
-  code: string;
-  options?: unknown[];
-}
-
-async function generateAllRuleData(): Promise<AllRuleData> {
-  const ruleData: AllRuleData = {};
-
-  // For rule sources we just import/execute the rule source file
-  for (const ruleFile of ruleFiles) {
-    const ruleFilePath = join(rulesDir, ruleFile.replace('.ts', ''));
-    const { default: ruleConfig, RULE_NAME } = await import(ruleFilePath);
-    ruleData[RULE_NAME] = {
-      ruleConfig,
-      ruleFilePath: ruleFilePath + '.ts',
-    } as RuleData;
-  }
-
-  /**
-   * For tests we want to preserve the annotated sources, so we do NOT want
-   * to execute the file and instead need to parse it using the ts compiler.
-   */
-  for (const testDir of testDirs) {
-    const testDirPath = join(testDirsDir, testDir);
-    const casesFilePath = join(testDirPath, 'cases.ts');
-    const testCasesContents = readFileSync(casesFilePath, 'utf-8');
-    const casesSourceFile = ts.createSourceFile(
-      casesFilePath,
-      testCasesContents,
-      ts.ScriptTarget.Latest,
-      true,
-    );
-
-    const extractedValid: ExtractedTestCase[] = [];
-    const extractedInvalid: ExtractedTestCase[] = [];
-
-    const extractNodes = (node: ts.Node) => {
-      if (
-        ts.isVariableDeclaration(node) &&
-        node.name.getText() === 'valid' &&
-        node.initializer &&
-        ts.isArrayLiteralExpression(node.initializer)
-      ) {
-        node.initializer.elements.forEach((el) => {
-          const newExtractedTestCase: ExtractedTestCase = {
-            code: '',
-          };
-
-          if (ts.isStringLiteralLike(el)) {
-            newExtractedTestCase.code = el.text;
-          }
-
-          if (ts.isObjectLiteralExpression(el)) {
-            el.properties.forEach((prop) => {
-              if (
-                ts.isPropertyAssignment(prop) &&
-                prop.name.getText() === 'code'
-              ) {
-                if (ts.isNoSubstitutionTemplateLiteral(prop.initializer)) {
-                  newExtractedTestCase.code =
-                    prop.initializer.rawText || prop.initializer.text;
-                }
-                if (ts.isTemplateExpression(prop.initializer)) {
-                  newExtractedTestCase.code = prop.initializer.getText();
-                }
-                if (ts.isStringLiteral(prop.initializer)) {
-                  newExtractedTestCase.code = prop.initializer.text;
-                }
-              }
-
-              if (
-                ts.isPropertyAssignment(prop) &&
-                prop.name.getText() === 'options' &&
-                ts.isArrayLiteralExpression(prop.initializer)
-              ) {
-                newExtractedTestCase.options =
-                  convertArrayLiteralExpressionToCode(prop.initializer);
-              }
-            });
-          }
-
-          if (newExtractedTestCase.code) {
-            extractedValid.push(newExtractedTestCase);
-          }
-        });
-      }
-
-      if (
-        ts.isVariableDeclaration(node) &&
-        node.name.getText() === 'invalid' &&
-        node.initializer &&
-        ts.isArrayLiteralExpression(node.initializer)
-      ) {
-        node.initializer.elements.forEach((el) => {
-          if (
-            ts.isCallExpression(el) &&
-            el.expression.getText() === 'convertAnnotatedSourceToFailureCase'
-          ) {
-            const newExtractedTestCase: ExtractedTestCase = {
-              code: '',
-            };
-
-            const config = el.arguments[0] as ts.ObjectLiteralExpression;
-            config.properties.forEach((prop) => {
-              if (
-                ts.isPropertyAssignment(prop) &&
-                prop.name.getText() === 'annotatedSource' &&
-                ts.isNoSubstitutionTemplateLiteral(prop.initializer)
-              ) {
-                newExtractedTestCase.code = prop.initializer.text;
-              }
-
-              if (
-                ts.isPropertyAssignment(prop) &&
-                prop.name.getText() === 'options' &&
-                ts.isArrayLiteralExpression(prop.initializer)
-              ) {
-                newExtractedTestCase.options =
-                  convertArrayLiteralExpressionToCode(prop.initializer);
-              }
-            });
-
-            if (newExtractedTestCase.code) {
-              extractedInvalid.push(newExtractedTestCase);
-            }
-          }
-        });
-      }
-
-      ts.forEachChild(node, extractNodes);
-    };
-
-    // Extract valid and invalid cases as strings
-    extractNodes(casesSourceFile);
-
-    ruleData[testDir] = {
-      ...ruleData[testDir],
-      testCasesFilePath: casesFilePath,
-      valid: extractedValid,
-      invalid: extractedInvalid,
-    };
-  }
-
-  return ruleData;
-}
-
-function standardizeSpecialUnderlineChar(str: string): string {
-  /**
-   * It is important that we only update special characters when we are on a line
-   * which only has special characters on it (as well as whitespace). Otherwise
-   * we will end up replacing real characters from the source code in the example.
-   */
-  const specialCharsOrWhitespaceRegExp = new RegExp(
-    `^(${SPECIAL_UNDERLINE_CHARS.map(escapeRegExp).join('|')}|\\s)+$`,
-  );
-  const whitespaceOnlyRegExp = /^\s+$/;
-
-  return str
-    .split('\n')
-    .map((line) => {
-      // Is line with exclusively special characters and whitespace (but not just whitespace)?
-      if (
-        !line.match(whitespaceOnlyRegExp) &&
-        line.match(specialCharsOrWhitespaceRegExp)
-      ) {
-        return line
-          .split('')
-          .map((char) =>
-            SPECIAL_UNDERLINE_CHARS.includes(
-              char as typeof SPECIAL_UNDERLINE_CHARS[number],
-            )
-              ? '~'
-              : char,
-          )
-          .join('');
-      }
-      return line;
-    })
-    .join('\n');
-}
-
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#escaping
-function escapeRegExp(str: string) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
-}
-
-function convertCodeExamplesToMarkdown(
-  codeExamples: ExtractedTestCase[] = [],
-  kind: 'valid' | 'invalid',
-  highligher: 'html' | 'ts',
-  ruleName: string,
-): string {
-  return codeExamples
-    .map(({ code, options }, i) => {
-      let formattedCode = removeLeadingAndTrailingEmptyLinesFromCodeExample(
-        removeLeadingIndentationFromCodeExample(code),
-      );
-      if (kind === 'invalid') {
-        formattedCode = standardizeSpecialUnderlineChar(formattedCode);
-      }
-
-      const exampleRuleConfig: unknown[] = ['error'];
-      // Not all unit tests have options configured
-      if (options) {
-        exampleRuleConfig.push(options[0]);
-      }
-      const formattedConfig = JSON.stringify(
-        {
-          rules: {
-            [ruleName]: exampleRuleConfig,
-          },
-        },
-        null,
-        2,
-      );
-
-      return `<br>
-
-#### ${options ? 'Custom' : 'Default'} Config
-
-\`\`\`json
-${formattedConfig}
-\`\`\`
-
-<br>
-
-#### ${kind === 'invalid' ? '❌ Invalid' : '✅ Valid'} Code
-
-\`\`\`${highligher}
-${formattedCode}
-\`\`\`
-
-${
-  i === codeExamples.length - 1
-    ? ''
-    : `<br>
-
----`
-}
-  `;
-    })
-    .join('\n');
-}
-
-function removeLeadingAndTrailingEmptyLinesFromCodeExample(
-  code: string,
-): string {
-  const lines = code.split('\n');
-
-  let currentLineIndex = 0;
-  let firstNonEmptyLineIndex = -1;
-  let lastNonEmptyLineIndex = -1;
-
-  for (const line of lines) {
-    if (/\S/.test(line)) {
-      if (firstNonEmptyLineIndex === -1) {
-        firstNonEmptyLineIndex = currentLineIndex;
-      }
-      lastNonEmptyLineIndex = currentLineIndex;
-    }
-    currentLineIndex++;
-  }
-
-  return lines
-    .filter((_, index) => {
-      if (index < firstNonEmptyLineIndex) {
-        return false;
-      }
-      if (index > lastNonEmptyLineIndex) {
-        return false;
-      }
-      return true;
-    })
-    .join('\n');
-}
-
-/**
- * We want to remove unnecessary leading padding, but keeping everything relative,
- * so that code indentation is not messed up
- */
-function removeLeadingIndentationFromCodeExample(code: string): string {
-  let detectedAmountToTrim: number | null = null;
-
-  return code
-    .split('\n')
-    .map((line) => {
-      // Is whitespace-only line, ignore
-      if (!/\S/.test(line)) {
-        return line;
-      }
-
-      // Haven't yet determined the number of characters to trim from the beginning of each line
-      const charsInLine = line.split('');
-      if (typeof detectedAmountToTrim !== 'number') {
-        let numberOfLeadingWhitespaceChars = 0;
-        for (const char of charsInLine) {
-          if (!/\S/.test(char)) {
-            numberOfLeadingWhitespaceChars++;
-            continue;
-          }
-          break;
-        }
-        detectedAmountToTrim = numberOfLeadingWhitespaceChars;
-      }
-
-      // Trim the detected number of characters from the beginning of the current line
-      return (
-        line
-          .split('')
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          .filter((_, i) => !(i < detectedAmountToTrim!))
-          .join('')
-      );
-    })
-    .join('\n');
-}
-
-function convertStringLikeToCode(strLike: ts.StringLiteralLike): string {
-  if (ts.isStringLiteralLike(strLike)) {
-    return strLike.text;
-  }
-  return '';
-}
-
-function convertNumericalLiteralToCode(numLiteral: ts.NumericLiteral): number {
-  return Number(numLiteral.text);
-}
-
-function convertBooleanLiteralToCode(
-  booleanLiteral: ts.BooleanLiteral,
-): boolean {
-  const stringified = booleanLiteral.getText();
-  if (stringified === 'false') {
-    return false;
-  }
-  if (stringified === 'true') {
-    return true;
-  }
-  throw new Error(
-    `Could not convert booleanLiteral node to code: ${booleanLiteral}`,
-  );
-}
-
-function convertArrayLiteralExpressionToCode(
-  arrExpr: ts.ArrayLiteralExpression,
-): unknown[] {
-  const arr: unknown[] = [];
-  arrExpr.elements.forEach((el) => {
-    if (ts.isObjectLiteralExpression(el)) {
-      const item = convertObjectLiteralExpressionToCode(el);
-      arr.push(item);
-    }
-    if (ts.isStringLiteralLike(el)) {
-      const item = convertStringLikeToCode(el);
-      arr.push(item);
-    }
-    if (ts.isArrayLiteralExpression(el)) {
-      const item = convertArrayLiteralExpressionToCode(el);
-      arr.push(item);
-    }
-  });
-  return arr;
-}
-
-function convertObjectLiteralExpressionToCode(
-  objExpr: ts.ObjectLiteralExpression,
-): Record<string, unknown> {
-  const obj: Record<string, unknown> = {};
-  objExpr.properties.forEach((prop) => {
-    if (ts.isPropertyAssignment(prop)) {
-      const key = prop.name.getText();
-
-      let val;
-      if (ts.isObjectLiteralExpression(prop.initializer)) {
-        val = convertObjectLiteralExpressionToCode(prop.initializer);
-      }
-      if (ts.isStringLiteralLike(prop.initializer)) {
-        val = convertStringLikeToCode(prop.initializer);
-      }
-      if (ts.isArrayLiteralExpression(prop.initializer)) {
-        val = convertArrayLiteralExpressionToCode(prop.initializer);
-      }
-      if (ts.isNumericLiteral(prop.initializer)) {
-        val = convertNumericalLiteralToCode(prop.initializer);
-      }
-      if (
-        prop.initializer.kind === ts.SyntaxKind.TrueKeyword ||
-        prop.initializer.kind === ts.SyntaxKind.FalseKeyword
-      ) {
-        val = convertBooleanLiteralToCode(
-          prop.initializer as ts.BooleanLiteral,
-        );
-      }
-
-      if (key && typeof val !== 'undefined') {
-        obj[key] = val;
-      }
-    }
-  });
-  return obj;
-}
+${convertCodeExamples
