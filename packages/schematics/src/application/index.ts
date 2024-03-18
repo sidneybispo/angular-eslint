@@ -1,32 +1,43 @@
-import type { Rule, SchematicContext, Tree } from '@angular-devkit/schematics';
-import { chain, externalSchematic } from '@angular-devkit/schematics';
-/**
- * We are able to use the full, unaltered Schema directly from @schematics/angular
- * The applicable json file is copied from node_modules as a prebuiid step to ensure
- * they stay in sync.
- */
-import type { Schema } from '@schematics/angular/application/schema';
+import {
+  chain,
+  externalSchematic,
+  MergeStrategy,
+  noop,
+  Rule,
+  SchematicContext,
+  Tree,
+} from '@angular-devkit/schematics';
+import { Schema as ApplicationSchema } from '@schematics/angular/application/schema';
 import {
   addESLintTargetToProject,
   createESLintConfigForProject,
   removeTSLintJSONForProject,
 } from '../utils';
 
-function eslintRelatedChanges(options: Schema) {
-  return chain([
-    // Update the lint builder and config in angular.json
-    addESLintTargetToProject(options.name, 'lint'),
-    // Create the ESLint config file for the project
-    createESLintConfigForProject(options.name),
-    // Delete the TSLint config file for the project
-    removeTSLintJSONForProject(options.name),
-  ]);
-}
-
-export default function (options: Schema): Rule {
+function eslintRelatedChanges(options: ApplicationSchema): Rule {
   return (host: Tree, context: SchematicContext) => {
     return chain([
-      externalSchematic('@schematics/angular', 'application', options),
+      addESLintTargetToProject(options.name, 'lint'),
+      createESLintConfigForProject(options.name),
+      removeTSLintJSONForProject(options.name),
+    ])(host, context);
+  };
+}
+
+export default function (options: ApplicationSchema): Rule {
+  if (!options.name) {
+    return noop();
+  }
+
+  return (host: Tree, context: SchematicContext) => {
+    return chain([
+      externalSchematic('@schematics/angular', 'application', options, {
+        dryRun: false,
+        mergeStrategy: MergeStrategy.Overwrite,
+      }).catch((error) => {
+        context.logger.error(error);
+        return;
+      }),
       eslintRelatedChanges(options),
     ])(host, context);
   };
