@@ -10,7 +10,6 @@ import {
 import { arrayify, toHumanReadableText } from '../utils';
 
 export const OPTION_TYPE_ATTRIBUTE = 'attribute';
-export const OPTION_TYPE_ATTRS = 'attrs';
 export const OPTION_TYPE_ELEMENT = 'element';
 
 export type SelectorStyleOption = SelectorStyle | string;
@@ -19,11 +18,11 @@ export type SelectorTypeOption =
   | typeof OPTION_TYPE_ELEMENT
   | string;
 export type SelectorTypeInternal =
-  | typeof OPTION_TYPE_ATTRS
+  | typeof OPTION_TYPE_ATTRIBUTE
   | typeof OPTION_TYPE_ELEMENT;
 
 const SELECTOR_TYPE_MAPPER: Record<string, SelectorTypeInternal> = {
-  [OPTION_TYPE_ATTRIBUTE]: OPTION_TYPE_ATTRS,
+  [OPTION_TYPE_ATTRIBUTE]: OPTION_TYPE_ATTRIBUTE,
   [OPTION_TYPE_ELEMENT]: OPTION_TYPE_ELEMENT,
 };
 
@@ -31,7 +30,7 @@ export type Options = [
   {
     readonly type: SelectorTypeOption | readonly SelectorTypeOption[];
     readonly prefix: string | readonly string[];
-    readonly style: SelectorTypeOption;
+    readonly style: SelectorStyleOption;
   },
 ];
 
@@ -42,10 +41,6 @@ export const SelectorValidator = {
 
   camelCase(selector: string): boolean {
     return /^[a-zA-Z0-9[\]]+$/.test(selector);
-  },
-
-  element(selector: string): boolean {
-    return selector !== null;
   },
 
   kebabCase(selector: string): boolean {
@@ -174,47 +169,7 @@ export const checkSelector = (
 } | null => {
   // Get valid list of selectors
   const types = arrayify<SelectorTypeOption>(
-    typeOption || [OPTION_TYPE_ATTRS, OPTION_TYPE_ELEMENT],
+    typeOption || [OPTION_TYPE_ELEMENT],
   ).reduce<readonly SelectorTypeInternal[]>(
     (previousValue, currentValue) =>
-      previousValue.concat(SELECTOR_TYPE_MAPPER[currentValue]),
-    [],
-  );
-
-  const styleValidator =
-    styleOption === OPTION_STYLE_KEBAB_CASE
-      ? SelectorValidator.kebabCase
-      : SelectorValidator.camelCase;
-
-  let listSelectors = null;
-
-  if (node && isLiteral(node)) {
-    listSelectors = CssSelector.parse(node.raw);
-  } else if (node && isTemplateLiteral(node) && node.quasis[0]) {
-    listSelectors = CssSelector.parse(node.quasis[0].value.raw);
-  }
-
-  if (!listSelectors) {
-    return null;
-  }
-
-  const validSelectors = getValidSelectors(listSelectors, types);
-
-  const hasExpectedPrefix = validSelectors.some((selector) =>
-    prefixOption.some((prefix) =>
-      SelectorValidator.prefix(prefix, styleOption)(selector),
-    ),
-  );
-
-  const hasExpectedStyle = validSelectors.some((selector) =>
-    styleValidator(selector),
-  );
-
-  const hasExpectedType = validSelectors.length > 0;
-
-  return {
-    hasExpectedPrefix,
-    hasExpectedType,
-    hasExpectedStyle,
-  };
-};
+      previous
