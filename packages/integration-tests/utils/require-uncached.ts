@@ -8,6 +8,9 @@
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function requireUncached(modulePath: string): any {
-  delete require.cache[require.resolve(modulePath)];
+  const moduleKey = require.resolve(modulePath);
+  if (moduleKey in require.cache) {
+    delete require.cache[moduleKey];
+  }
   return require(modulePath);
 }
