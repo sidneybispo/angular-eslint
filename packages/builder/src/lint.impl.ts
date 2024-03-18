@@ -1,5 +1,5 @@
-import type { ExecutorContext } from '@nrwl/devkit';
-import type { ESLint } from 'eslint';
+import type { ExecutorContext, Tree } from '@nrwl/devkit';
+import type { ESLint, LintResult } from 'eslint';
 import { writeFileSync } from 'fs';
 import { dirname, join, resolve } from 'path';
 import type { Schema } from './schema';
@@ -43,7 +43,7 @@ export default async function run(
     ? resolve(workspaceRoot, options.eslintConfig)
     : undefined;
 
-  const lintResults: ESLint.LintResult[] = await lint(
+  const lintResults: LintResult[] = await lint(
     workspaceRoot,
     eslintConfigPath,
     options,
@@ -65,8 +65,8 @@ export default async function run(
    * Depending on user configuration we may not want to report on all the
    * results, so we need to adjust them before formatting.
    */
-  const finalLintResults: ESLint.LintResult[] = lintResults
-    .map((result): ESLint.LintResult | null => {
+  const finalLintResults: LintResult[] = lintResults
+    .map((result): LintResult | null => {
       totalErrors += result.errorCount;
       totalWarnings += result.warningCount;
 
@@ -84,7 +84,7 @@ export default async function run(
       return null;
     })
     // Filter out the null values
-    .filter(Boolean) as ESLint.LintResult[];
+    .filter(Boolean) as LintResult[];
 
   const hasWarningsToPrint: boolean = totalWarnings > 0 && !reportOnlyErrors;
   const hasErrorsToPrint: boolean = totalErrors > 0;
@@ -104,6 +104,7 @@ export default async function run(
     const pathToOutputFile = join(context.root, options.outputFile);
     createDirectory(dirname(pathToOutputFile));
     writeFileSync(pathToOutputFile, formattedResults);
+    console.log(`Lint results written to ${pathToOutputFile}`);
   } else {
     console.info(formattedResults);
   }
@@ -134,4 +135,10 @@ export default async function run(
   return {
     success: options.force || (totalErrors === 0 && !tooManyWarnings),
   };
+}
+
+async function createDirectory(directory: string, tree: Tree): Promise<void> {
+  if (!tree.exists(directory)) {
+    await tree.mkdir(directory);
+  }
 }
