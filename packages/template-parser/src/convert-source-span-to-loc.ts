@@ -27,24 +27,17 @@ export function convertNodeSourceSpanToLoc(
 
 export function convertElementSourceSpanToLoc(
   context: Readonly<TSESLint.RuleContext<string, readonly unknown[]>>,
-  node: TmplAstElement & { type: string },
+  node: TmplAstElement,
 ): TSESTree.SourceLocation {
   if (node.type !== 'Element$1') {
-    // We explicitly throw an exception since this function should not be used
-    // with non-element nodes, e.g. `TextAttribute` or `MethodDefinition`, etc.
     throw new Error(
-      'convertElementSourceSpanToLoc is intented to be used only with elements.',
+      'convertElementSourceSpanToLoc is intended to be used only with elements.',
     );
   }
 
-  // Void elements are "self-closed" elements, e.g. `<img />` or `<area />`.
-  // The Angular compiler explicitly doesn't set the end source span for void
-  // elements, but we still have to find its location to be able to report failures.
   if (getHtmlTagDefinition(node.name).isVoid) {
-    // Fallback to the original `node` if the
-    // `tryToFindTheVoidNodeThatMatchesTheSourceSpan` returns nothing.
-    node = (tryToFindTheVoidNodeThatMatchesTheSourceSpan(context, node) ||
-      node) as typeof node;
+    const matchingNode = tryToFindTheVoidNodeThatMatchesTheSourceSpan(context, node) || node;
+    return convertNodeSourceSpanToLoc(matchingNode.sourceSpan);
   }
 
   return convertNodeSourceSpanToLoc(node.sourceSpan);
@@ -54,10 +47,12 @@ function tryToFindTheVoidNodeThatMatchesTheSourceSpan(
   context: Readonly<TSESLint.RuleContext<string, readonly unknown[]>>,
   node: TmplAstElement,
 ): Node | null {
-  // Previously, `codelyzer` used `TemplateParser` to parse a template into an AST tree.
-  // The `TemplateParser` used `HtmlParser`, because `HtmlParser` still sets the end span
-  // for void elements.
-  const { rootNodes } = getHtmlParser().parse(
+  const parser = getHtmlParser();
+  if (!parser) {
+    throw new Error('Failed to initialize HtmlParser instance.');
+  }
+
+  const { rootNodes } = parser.parse(
     context.getSourceCode().getText(),
     context.getFilename(),
   );
@@ -71,17 +66,12 @@ function lookupTheVoidNode(
 ): Node | null {
   for (const node of rootNodes) {
     if (
-      // We can't compare by `node.sourceSpan == sourceSpan` since references
-      // will differ. But comparing `line` and` offset` is the
-      // correct way, because they will not differ.
       node.sourceSpan.start.line === sourceSpan.start.line &&
       node.sourceSpan.start.offset === sourceSpan.start.offset
     ) {
       return node;
     }
 
-    // `HtmlParser` will return a list of root nodes, these nodes
-    // can be either text or elements. Elements might have child elements.
     if (node instanceof Element) {
       const voidNodeBeingLookedUp = lookupTheVoidNode(
         node.children,
@@ -98,8 +88,7 @@ function lookupTheVoidNode(
 }
 
 let htmlParser: HtmlParser | null = null;
-// Initialize the `HtmlParser` class lazily only when the function is
-// invoked for the first time.
+
 function getHtmlParser(): HtmlParser {
   return htmlParser || (htmlParser = new HtmlParser());
 }
