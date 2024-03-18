@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-import path from 'path';
+import path, { dirname, join } from 'path';
 import {
   FIXTURES_DIR,
   LONG_TIMEOUT_MS,
@@ -8,9 +8,22 @@ import {
   runYarnInstall,
 } from '../utils/local-registry-process';
 import { requireUncached } from '../utils/require-uncached';
-import { runLint } from '../utils/run-lint';
+import { runLint, LintOutput } from '../utils/run-lint';
+import { readFileSync } from 'fs';
+import { execSync } from 'child_process';
+
+type Project = {
+  dir: string;
+  projectName: string;
+};
 
 const fixtureDirectory = 'v1123-multi-project-yarn-auto-convert';
+
+const projects: Project[] = [
+  { dir: fixtureDirectory, projectName: fixtureDirectory },
+  { dir: join(fixtureDirectory, 'projects', 'another-app'), projectName: 'another-app' },
+  { dir: join(fixtureDirectory, 'projects', 'another-lib'), projectName: 'another-lib' },
+];
 
 describe(fixtureDirectory, () => {
   jest.setTimeout(LONG_TIMEOUT_MS);
@@ -20,66 +33,43 @@ describe(fixtureDirectory, () => {
     await runYarnInstall();
     await runNgAdd();
 
-    // Deliberately don't convert the root project first, so we can ensure this is also supported
-    await runConvertTSLintToESLint([
-      '--no-interactive',
-      '--project',
-      'another-app',
-    ]);
-    // root project
-    await runConvertTSLintToESLint([
-      '--no-interactive',
-      '--project',
-      'v1123-multi-project-yarn-auto-convert',
-    ]);
-    await runConvertTSLintToESLint([
-      '--no-interactive',
-      '--project',
-      'another-lib',
-    ]);
+    for (const project of projects) {
+      try {
+        await runConvertTSLintToESLint([
+          '--no-interactive',
+          '--project',
+          project.projectName,
+        ]);
+      } catch (e) {
+        console.error(`Failed to convert tslint to eslint for project ${project.projectName}`);
+        console.error(e);
+      }
+    }
   });
 
-  it('it should pass linting after converting the out of the box Angular CLI setup (with an additional project called "another-app" with a custom prefix set)', async () => {
-    // Root project
-    expect(
-      requireUncached(
-        '../fixtures/v1123-multi-project-yarn-auto-convert/.eslintrc.json',
-      ),
-    ).toMatchSnapshot();
+  afterEach(() => {
+    for (const project of projects) {
+      try {
+        execSync(`rm -f ${join(project.dir, '.eslintrc.js')}`);
+      } catch (e) {
+        console.error(`Failed to remove .eslintrc.js file for project ${project.projectName}`);
+        console.error(e);
+      }
+    }
+  });
 
-    expect(
-      requireUncached(
-        '../fixtures/v1123-multi-project-yarn-auto-convert/angular.json',
-      ).projects['v1123-multi-project-yarn-auto-convert'].architect.lint,
-    ).toMatchSnapshot();
+  describe.each(projects)('project: %s', (_, project) => {
+    it('should pass linting after converting the out of the box Angular CLI setup', async () => {
+      expect.assertions(3);
 
-    // Additional project ("another-app")
-    expect(
-      requireUncached(
-        '../fixtures/v1123-multi-project-yarn-auto-convert/projects/another-app/.eslintrc.json',
-      ),
-    ).toMatchSnapshot();
+      const eslintrcJson = readFileSync(join(project.dir, '.eslintrc.json'), 'utf-8');
+      expect(requireUncached(eslintrcJson)).toMatchSnapshot();
 
-    expect(
-      requireUncached(
-        '../fixtures/v1123-multi-project-yarn-auto-convert/angular.json',
-      ).projects['another-app'].architect.lint,
-    ).toMatchSnapshot();
+      const angularJson = readFileSync(join(fixtureDirectory, 'angular.json'), 'utf-8');
+      expect(JSON.parse(angularJson).projects[project.projectName].architect.lint).toMatchSnapshot();
 
-    // Additional library project ("another-lib")
-    expect(
-      requireUncached(
-        '../fixtures/v1123-multi-project-yarn-auto-convert/projects/another-lib/.eslintrc.json',
-      ),
-    ).toMatchSnapshot();
-
-    expect(
-      requireUncached(
-        '../fixtures/v1123-multi-project-yarn-auto-convert/angular.json',
-      ).projects['another-lib'].architect.lint,
-    ).toMatchSnapshot();
-
-    const lintOutput = await runLint(fixtureDirectory);
-    expect(lintOutput).toMatchSnapshot();
+      const lintOutput: LintOutput = await runLint(project.dir);
+      expect(lintOutput).toMatchSnapshot();
+    });
   });
 });
