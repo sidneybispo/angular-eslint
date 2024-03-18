@@ -1,12 +1,15 @@
 import { RuleTester } from '@angular-eslint/utils';
 import rule, { RULE_NAME } from '../../../src/rules/relative-url-prefix';
-import { invalid, valid } from './cases';
+import { relativeUrlPrefixTestCases as testCases } from './cases';
 
 const ruleTester = new RuleTester({
-  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    ecmaVersion: 6,
+    sourceType: 'module',
+    ecmaFeatures: {
+      jsx: true,
+    },
+  },
 });
 
-ruleTester.run(RULE_NAME, rule, {
-  valid,
-  invalid,
-});
+ruleTester.run(RULE_NAME, rule, testCases);
