@@ -1,1 +1,5 @@
-blank_issues_enabled: true
+const config = {
+  blank_issues_enabled: true,
+};
+
+module.exports = config;
