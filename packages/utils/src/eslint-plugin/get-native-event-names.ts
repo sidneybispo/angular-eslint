@@ -1,10 +1,9 @@
-let nativeEventNames: ReadonlySet<string> | null = null;
+const nativeEventNames: ReadonlySet<string> = new Set<string>([]);
 
-export function getNativeEventNames(): ReadonlySet<string> {
-  return (
-    nativeEventNames ??
-    (nativeEventNames = new Set<string>([
-      // Source: https://developer.mozilla.org/en-US/docs/Web/Events
+const getNativeEventNames = (): ReadonlySet<string> => {
+  if (!nativeEventNames.size) {
+    // Source: https://developer.mozilla.org/en-US/docs/Web/Events
+    nativeEventNames.add(...[
       'abort',
       'afterprint',
       'animationend',
@@ -176,6 +175,9 @@ export function getNativeEventNames(): ReadonlySet<string> {
       'volumechange',
       'waiting',
       'wheel',
-    ]))
-  );
-}
+    ]);
+  }
+  return nativeEventNames;
+};
+
+export { getNativeEventNames };
