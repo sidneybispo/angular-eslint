@@ -4,6 +4,12 @@ import { NodePackageInstallTask } from '@angular-devkit/schematics/tasks';
 import { updateJsonInTree } from '../../utils';
 
 const updatedAngularESLintVersion = '^4.0.0';
+const angularESLintDependencies = [
+  '@angular-eslint/builder',
+  '@angular-eslint/eslint-plugin',
+  '@angular-eslint/eslint-plugin-template',
+  '@angular-eslint/template-parser'
+];
 
 function updateIfExists(
   deps: Record<string, string> | undefined,
@@ -17,29 +23,9 @@ function updateIfExists(
 
 function updateRelevantDependencies(host: Tree, context: SchematicContext) {
   return updateJsonInTree('package.json', (json) => {
-    /**
-     * @angular-eslint
-     */
-    updateIfExists(
-      json.devDependencies,
-      '@angular-eslint/builder',
-      updatedAngularESLintVersion,
-    );
-    updateIfExists(
-      json.devDependencies,
-      '@angular-eslint/eslint-plugin',
-      updatedAngularESLintVersion,
-    );
-    updateIfExists(
-      json.devDependencies,
-      '@angular-eslint/eslint-plugin-template',
-      updatedAngularESLintVersion,
-    );
-    updateIfExists(
-      json.devDependencies,
-      '@angular-eslint/template-parser',
-      updatedAngularESLintVersion,
-    );
+    angularESLintDependencies.forEach(dep => {
+      updateIfExists(json.devDependencies, dep, updatedAngularESLintVersion);
+    });
 
     context.addTask(new NodePackageInstallTask());
 
