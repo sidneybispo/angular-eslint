@@ -8,5 +8,10 @@ updates:
     ignore:
       # @nrwl deps should always be updated by running `npx nx migrate @nrwl/workspace`
       - dependency-name: "@nrwl/*"
-    # Disable version updates, this does not affect security updates
+    # Disable version updates for devDependencies, this does not affect security updates
     open-pull-requests-limit: 0
+    update-types:
+      security: true
+      minor: false
+      major: false
+      patch: false
