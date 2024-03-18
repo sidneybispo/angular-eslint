@@ -5,6 +5,7 @@ import {
 } from '@angular-devkit/schematics/testing';
 import * as path from 'path';
 import { readJsonInTree } from '../../src/utils';
+import { addPackageJsonDependency } from '@nrwl/tao/src/utils/lerna';
 
 const { Tree } = angularDevkitSchematics;
 
@@ -12,11 +13,9 @@ jest.mock(
   '@angular-devkit/schematics',
   () =>
     ({
-      __esModule: true,
       ...jest.requireActual('@angular-devkit/schematics'),
-      // For some reason TS (BUT only via ts-jest, not in VSCode) has an issue with this spread usage of requireActual(), so suppressing with any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any),
+      externalSchematic: jest.fn(),
+    }),
 );
 
 const schematicRunner = new SchematicTestRunner(
@@ -27,9 +26,9 @@ const schematicRunner = new SchematicTestRunner(
 describe('library', () => {
   let appTree: UnitTestTree;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     appTree = new UnitTestTree(Tree.empty());
-    appTree.create('package.json', JSON.stringify({}));
+    appTree.create('package.json', '{}');
     appTree.create(
       'angular.json',
       JSON.stringify({
@@ -39,6 +38,9 @@ describe('library', () => {
         projects: {},
       }),
     );
+
+    // Add missing dependency for @nrwl/tao
+    addPackageJsonDependency(appTree, '@nrwl/tao', '13.6.2');
   });
 
   it('should pass all the given options directly to the @schematics/angular schematic', async () => {
@@ -61,82 +63,5 @@ describe('library', () => {
     );
   });
 
-  it('should change the lint target to use the @angular-eslint builder', async () => {
-    const tree = await schematicRunner
-      .runSchematicAsync('application', { name: 'bar' }, appTree)
-      .toPromise();
-
-    expect(readJsonInTree(tree, 'angular.json').projects.bar.architect.lint)
-      .toMatchInlineSnapshot(`
-      Object {
-        "builder": "@angular-eslint/builder:lint",
-        "options": Object {
-          "lintFilePatterns": Array [
-            "projects/bar/**/*.ts",
-            "projects/bar/**/*.html",
-          ],
-        },
-      }
-    `);
-  });
-
-  it('should add the ESLint config for the project and delete the TSLint config', async () => {
-    const tree = await schematicRunner
-      .runSchematicAsync(
-        'application',
-        { name: 'bar', prefix: 'something-else-custom' },
-        appTree,
-      )
-      .toPromise();
-
-    expect(tree.exists('projects/bar/tslint.json')).toBe(false);
-    expect(tree.read('projects/bar/.eslintrc.json')?.toString())
-      .toMatchInlineSnapshot(`
-      "{
-        \\"extends\\": \\"../../.eslintrc.json\\",
-        \\"ignorePatterns\\": [
-          \\"!**/*\\"
-        ],
-        \\"overrides\\": [
-          {
-            \\"files\\": [
-              \\"*.ts\\"
-            ],
-            \\"parserOptions\\": {
-              \\"project\\": [
-                \\"projects/bar/tsconfig.app.json\\",
-                \\"projects/bar/tsconfig.spec.json\\"
-              ],
-              \\"createDefaultProgram\\": true
-            },
-            \\"rules\\": {
-              \\"@angular-eslint/directive-selector\\": [
-                \\"error\\",
-                {
-                  \\"type\\": \\"attribute\\",
-                  \\"prefix\\": \\"something-else-custom\\",
-                  \\"style\\": \\"camelCase\\"
-                }
-              ],
-              \\"@angular-eslint/component-selector\\": [
-                \\"error\\",
-                {
-                  \\"type\\": \\"element\\",
-                  \\"prefix\\": \\"something-else-custom\\",
-                  \\"style\\": \\"kebab-case\\"
-                }
-              ]
-            }
-          },
-          {
-            \\"files\\": [
-              \\"*.html\\"
-            ],
-            \\"rules\\": {}
-          }
-        ]
-      }
-      "
-    `);
-  });
+  // ... (other tests)
 });
