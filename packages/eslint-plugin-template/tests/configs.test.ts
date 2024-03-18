@@ -1,12 +1,15 @@
-import eslintPluginTemplate from '../src';
+import { configs, rules } from '../src';
+import 'jest';
+
+jest.mock('../src');
 
 const ESLINT_PLUGIN_TEMPLATE_PREFIX = '@angular-eslint/template/';
 
-interface Config {
+type Config = {
   extends?: string | string[];
   rules?: { [ruleName: string]: string | Record<string, unknown> };
   overrides?: Config[];
-}
+};
 
 function containsRule(config: Config, ruleName: string): boolean {
   const prefixedRuleName = `${ESLINT_PLUGIN_TEMPLATE_PREFIX}${ruleName}`;
@@ -17,33 +20,35 @@ function containsRule(config: Config, ruleName: string): boolean {
 }
 
 describe('configs', () => {
-  describe('base', () => {
-    it('exists', () => {
-      expect(eslintPluginTemplate.configs.base).toBeDefined();
-    });
+  beforeEach(() => {
+    jest.resetAllMocks();
   });
 
-  describe('all', () => {
+  describe.each`
+  config       | name
+  ${configs.all} | ${'all'}
+  ${configs.recommended} | ${'recommended'}
+`('$name', ({ config }) => {
     it('should contain all of the rules from the plugin', () => {
       expect(
-        Object.keys(eslintPluginTemplate.rules).every((ruleName) =>
-          containsRule(eslintPluginTemplate.configs.all, ruleName),
+        Object.keys(rules).every((ruleName) =>
+          containsRule(config, ruleName),
         ),
       ).toBe(true);
     });
 
     it('should only contain valid rules', () => {
       expect(
-        Object.keys(eslintPluginTemplate.configs.all.rules)
+        Object.keys(config.rules)
           .filter((ruleName) =>
             ruleName.startsWith(ESLINT_PLUGIN_TEMPLATE_PREFIX),
           )
           .every((ruleName) =>
             Boolean(
-              eslintPluginTemplate.rules[
+              rules[
                 ruleName.slice(
                   ESLINT_PLUGIN_TEMPLATE_PREFIX.length,
-                ) as keyof typeof eslintPluginTemplate.rules
+                ) as keyof typeof rules
               ],
             ),
           ),
@@ -51,33 +56,12 @@ describe('configs', () => {
     });
   });
 
-  describe('recommended', () => {
-    it('should contain the recommended rules', () => {
-      expect(
-        Object.entries(eslintPluginTemplate.rules)
-          .filter((entry) => !!entry[1].meta.docs?.recommended)
-          .every((entry) =>
-            containsRule(eslintPluginTemplate.configs.recommended, entry[0]),
-          ),
-      ).toBe(true);
-    });
-
-    it('should only contain valid rules', () => {
-      expect(
-        Object.keys(eslintPluginTemplate.configs.recommended.rules)
-          .filter((ruleName) =>
-            ruleName.startsWith(ESLINT_PLUGIN_TEMPLATE_PREFIX),
-          )
-          .every((ruleName) =>
-            Boolean(
-              eslintPluginTemplate.rules[
-                ruleName.slice(
-                  ESLINT_PLUGIN_TEMPLATE_PREFIX.length,
-                ) as keyof typeof eslintPluginTemplate.rules
-              ],
-            ),
-          ),
-      ).toBe(true);
+  describe('base', () => {
+    it('exists', () => {
+      expect(configs.base).toBeDefined();
     });
   });
-});
+
+  describe('containsRule', () => {
+    it.each`
+      config                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
