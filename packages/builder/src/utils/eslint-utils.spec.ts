@@ -5,11 +5,9 @@ jest.mock('eslint', () => ({
   ESLint: jest.fn(),
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { ESLint } = require('eslint');
-(<jest.SpyInstance>ESLint).mockImplementation(() => ({
-  lintFiles: (args: string[]) => args,
-}));
+
+const mockedESLint = <jest.SpyInstance>ESLint;
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { lint } = require('./eslint-utils');
@@ -19,16 +17,15 @@ describe('eslint-utils', () => {
     jest.clearAllMocks();
   });
 
-  it('should create the ESLint instance with the proper parameters', async () => {
+  it('should create the ESLint instance with the proper parameters (with config file)', async () => {
     await lint('/root', './.eslintrc.json', {
       fix: true,
       cache: true,
       cacheLocation: '/root/cache',
       cacheStrategy: 'content',
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-    }).catch(() => {});
+    });
 
-    expect(ESLint).toHaveBeenCalledWith({
+    expect(mockedESLint).toHaveBeenCalledWith({
       overrideConfigFile: './.eslintrc.json',
       fix: true,
       cache: true,
@@ -41,16 +38,15 @@ describe('eslint-utils', () => {
     });
   });
 
-  it('should create the ESLint instance with the proper parameters', async () => {
+  it('should create the ESLint instance with the proper parameters (without config file)', async () => {
     await lint('/root', undefined, {
       fix: true,
       cache: true,
       cacheLocation: '/root/cache',
       cacheStrategy: 'content',
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-    }).catch(() => {});
+    });
 
-    expect(ESLint).toHaveBeenCalledWith({
+    expect(mockedESLint).toHaveBeenCalledWith({
       overrideConfigFile: undefined,
       fix: true,
       cache: true,
@@ -70,10 +66,9 @@ describe('eslint-utils', () => {
         cache: true,
         cacheLocation: '/root/cache',
         noEslintrc: true,
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
-      }).catch(() => {});
+      });
 
-      expect(ESLint).toHaveBeenCalledWith({
+      expect(mockedESLint).toHaveBeenCalledWith({
         overrideConfigFile: undefined,
         fix: true,
         cache: true,
@@ -89,16 +84,16 @@ describe('eslint-utils', () => {
   describe('rulesdir', () => {
     it('should create the ESLint instance with "rulePaths" set to the given value for rulesdir', async () => {
       const extraRuleDirectories = ['./some-rules', '../some-more-rules'];
+
       await lint('/root', undefined, {
         fix: true,
         cache: true,
         cacheLocation: '/root/cache',
         cacheStrategy: 'content',
         rulesdir: extraRuleDirectories,
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
-      }).catch(() => {});
+      });
 
-      expect(ESLint).toHaveBeenCalledWith({
+      expect(mockedESLint).toHaveBeenCalledWith({
         fix: true,
         cache: true,
         cacheLocation: '/root/cache',
@@ -119,10 +114,9 @@ describe('eslint-utils', () => {
         cacheLocation: '/root/cache',
         cacheStrategy: 'content',
         resolvePluginsRelativeTo: './some-path',
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
-      }).catch(() => {});
+      });
 
-      expect(ESLint).toHaveBeenCalledWith({
+      expect(mockedESLint).toHaveBeenCalledWith({
         fix: true,
         cache: true,
         cacheLocation: '/root/cache',
