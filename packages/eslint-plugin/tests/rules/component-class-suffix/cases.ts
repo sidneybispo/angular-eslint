@@ -3,30 +3,30 @@ import type { MessageIds } from '../../../src/rules/component-class-suffix';
 
 const messageId: MessageIds = 'componentClassSuffix';
 
-export const valid = [
+export const valid: (string | { code: string, options?: { suffixes?: string[] } })[] = [
   `
     @Component({
       selector: 'sg-foo-bar',
       template: '<foo-bar [foo]="bar">{{baz + 42}}</foo-bar>'
     })
     class TestComponent {}
-`,
+  `,
   `
     @Directive({
       selector: '[myHighlight]'
     })
     class TestDirective {}
-`,
+  `,
   `
     @Pipe({
       selector: 'sg-test-pipe'
     })
     class TestPipe {}
-`,
+  `,
   `
     @Injectable()
     class TestService {}
-`,
+  `,
   `
     class TestEmpty {}
   `,
@@ -50,7 +50,7 @@ export const valid = [
   },
 ];
 
-export const invalid = [
+export const invalid: { annotatedSource: string, messageId: string, options?: { suffixes?: string[] }, data?: { suffixes?: string } }[] = [
   convertAnnotatedSourceToFailureCase({
     description: 'it should fail when component class is with the wrong suffix',
     annotatedSource: `
@@ -93,13 +93,4 @@ export const invalid = [
     description: `it should fail when a different list of suffixes is set and doesn't match`,
     annotatedSource: `
         @Component({
-          selector: 'sgBarFoo'
-        })
-        class TestDirective {}
-              ~~~~~~~~~~~~~
-      `,
-    messageId,
-    options: [{ suffixes: ['Page'] }],
-    data: { suffixes: '"Page"' },
-  }),
-];
+         
