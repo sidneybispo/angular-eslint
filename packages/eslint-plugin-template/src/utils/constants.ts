@@ -1,8 +1,8 @@
 /**
- * A representation of a property read.
+ * A symbol representing a property read.
  * @example
  * ```html
  * <input [disabled]="disabled">
  * ```
  */
-export const PROPERTY_READ = Symbol('PROPERTY_READ');
+export const propertyRead = Symbol('propertyRead');
